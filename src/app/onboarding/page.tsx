@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { getCurrentMembership, getCurrentUser } from "@/lib/auth/company";
+import { connection } from "next/server";
 
 export const instant = false;
 
 export default async function OnboardingPage() {
+  await connection();
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (await getCurrentMembership()) redirect("/dashboard");

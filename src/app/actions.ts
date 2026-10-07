@@ -184,8 +184,8 @@ export async function createQuoteFromVisitAction(formData: FormData): Promise<vo
     ...(services ?? []).map((item) => ({ equipment_id: item.equipment_id, item_type: item.line_type === "LABOR" ? "LABOR" : "SERVICE", description: item.description, quantity: Number(item.quantity), unit: "UNIDADE", unit_price: Number(item.unit_price), technical_part_id: null })),
   ];
   const totals = calculateQuoteTotals(rawItems, 0);
-  const quoteNumber = `ORC-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
-  const { data: quote, error } = await supabase.from("quotes").insert({ company_id: membership.company_id, client_id: visit.client_id, service_visit_id: visitId, quote_number: quoteNumber, status: "DRAFT", issued_at: new Date().toISOString(), subtotal: totals.subtotal, discount: 0, total: totals.total, notes: null }).select("id").single();
+  const quoteNumber = `ORC-${crypto.randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase()}`;
+  const { data: quote, error } = await supabase.from("quotes").insert({ company_id: membership.company_id, client_id: visit.client_id, service_visit_id: visitId, quote_number: quoteNumber, status: "DRAFT", subtotal: totals.subtotal, discount: 0, total: totals.total, notes: null }).select("id").single();
   if (error || !quote) redirect("/orcamentos/novo?error=save");
   if (rawItems.length) await supabase.from("quote_items").insert(rawItems.map((item, index) => ({ quote_id: quote.id, line_number: index + 1, ...item, total: Number((item.quantity * item.unit_price).toFixed(2)) })));
   const equipmentIds = [...new Set(rawItems.map((item) => item.equipment_id).filter((id): id is string => Boolean(id)))];
