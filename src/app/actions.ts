@@ -216,6 +216,15 @@ export async function updateQuoteStatusAction(formData: FormData): Promise<void>
   const supabase = await createClient();
   const { error } = await supabase.from("quotes").update({ status }).eq("id", quoteId).eq("company_id", membership.company_id);
   if (error) redirect(`/orcamentos/${quoteId}?error=status`);
+  if (status === "APPROVED") {
+    const { data: workOrderId, error: workOrderError } = await supabase.rpc("create_work_order_from_quote", { p_quote_id: quoteId });
+    if (workOrderError || !workOrderId) {
+      console.error("[work-order] automatic creation after approval failed", { code: workOrderError?.code, message: workOrderError?.message, quoteId });
+      redirect(`/orcamentos/${quoteId}?error=work-order`);
+    }
+    revalidatePath("/ordens");
+    redirect(`/ordens/${workOrderId}`);
+  }
   redirect(`/orcamentos/${quoteId}`);
 }
 
