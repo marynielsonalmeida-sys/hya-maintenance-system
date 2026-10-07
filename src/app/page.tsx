@@ -11,6 +11,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { futureModules, type FutureModuleKey } from "@/lib/modules";
 
 const moduleIcons: Record<FutureModuleKey, LucideIcon> = {
@@ -48,7 +49,7 @@ export default function Home() {
             <p className="mb-5 font-mono text-xs font-semibold uppercase tracking-[0.28em] text-[#72e0c0]">Maintenance control center</p>
             <h1 className="max-w-xl text-5xl font-semibold leading-[0.98] tracking-[-0.05em] text-white sm:text-6xl lg:text-8xl">Gestão de<br /><span className="text-[#72e0c0]">Manutenção</span></h1>
             <p className="mt-7 max-w-lg text-base leading-7 text-[#9db0b3] sm:text-lg">Equipamentos <span className="mx-2 text-[#72e0c0]">•</span> Chamados <span className="mx-2 text-[#72e0c0]">•</span> Ordens de Serviço</p>
-            <a href="#modules" className="mt-9 inline-flex items-center gap-3 rounded-md bg-[#72e0c0] px-5 py-3 text-sm font-bold text-[#071015] transition hover:bg-[#a0f0d8]">Entrar no Sistema <ArrowUpRight className="h-4 w-4" /></a>
+            <Link href="/login" className="mt-9 inline-flex items-center gap-3 rounded-md bg-[#72e0c0] px-5 py-3 text-sm font-bold text-[#071015] transition hover:bg-[#a0f0d8]">Entrar no Sistema <ArrowUpRight className="h-4 w-4" /></Link>
           </div>
 
           <div className="relative mx-auto w-full max-w-md">

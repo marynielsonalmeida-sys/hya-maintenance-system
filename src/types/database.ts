@@ -1,6 +1,7 @@
 export type UUID = string;
 export type ISODate = string;
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json | undefined };
+type TableDefinition<Row> = { Row: Row & Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: [] };
 
 export type CompanyStatus = "ACTIVE" | "SUSPENDED" | "ARCHIVED";
 export type AppRole = "OWNER" | "ADMIN" | "MANAGER" | "TECHNICIAN" | "VIEWER";
@@ -40,24 +41,38 @@ export interface AuditLog { id: UUID; company_id: UUID; user_id: UUID; entity_ty
 export interface Database {
   public: {
     Tables: {
-      companies: { Row: Company };
-      profiles: { Row: Profile };
-      user_roles: { Row: UserRole };
-      company_members: { Row: CompanyMember };
-      clients: { Row: Client };
-      equipment: { Row: Equipment };
-      service_requests: { Row: ServiceRequest };
-      work_orders: { Row: WorkOrder };
-      work_order_equipment: { Row: WorkOrderEquipment };
-      technician_profiles: { Row: TechnicianProfile };
-      parts: { Row: Part };
-      work_order_parts: { Row: WorkOrderPart };
-      work_order_photos: { Row: WorkOrderPhoto };
-      work_order_signatures: { Row: WorkOrderSignature };
-      quotes: { Row: Quote };
-      quote_items: { Row: QuoteItem };
-      financial_entries: { Row: FinancialEntry };
-      audit_logs: { Row: AuditLog };
+      companies: TableDefinition<Company>;
+      profiles: TableDefinition<Profile>;
+      user_roles: TableDefinition<UserRole>;
+      company_members: TableDefinition<CompanyMember>;
+      clients: TableDefinition<Client>;
+      equipment: TableDefinition<Equipment>;
+      service_requests: TableDefinition<ServiceRequest>;
+      work_orders: TableDefinition<WorkOrder>;
+      work_order_equipment: TableDefinition<WorkOrderEquipment>;
+      technician_profiles: TableDefinition<TechnicianProfile>;
+      parts: TableDefinition<Part>;
+      work_order_parts: TableDefinition<WorkOrderPart>;
+      work_order_photos: TableDefinition<WorkOrderPhoto>;
+      work_order_signatures: TableDefinition<WorkOrderSignature>;
+      quotes: TableDefinition<Quote>;
+      quote_items: TableDefinition<QuoteItem>;
+      financial_entries: TableDefinition<FinancialEntry>;
+      audit_logs: TableDefinition<AuditLog>;
     };
+    Functions: {
+      create_company_onboarding: {
+        Args: {
+          p_name: string;
+          p_document: string | null;
+          p_phone: string | null;
+          p_email: string | null;
+        };
+        Returns: UUID;
+      };
+    };
+    Views: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
