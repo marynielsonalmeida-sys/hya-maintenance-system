@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireCompany } from "@/lib/auth/company";
+import { getCurrentMembership, requireCompany } from "@/lib/auth/company";
 import { getAuthErrorMessage, normalizeCompanyPhone, normalizeCompanyTaxId, validateCompanyEmail, validateCompanyName, validateCompanyPhone, validateCompanyTaxId, validateRegistration } from "@/lib/auth/validation";
 import { revalidatePath } from "next/cache";
 import { getCompatibleTechnicalParts } from "@/lib/technical-library/queries";
@@ -50,10 +50,16 @@ export async function createCompanyAction(_: ActionState, formData: FormData): P
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  const existingMembership = await getCurrentMembership();
+  if (existingMembership) {
+    revalidatePath("/dashboard");
+    revalidatePath("/onboarding");
+    redirect("/dashboard");
+  }
   const { error } = await supabase.rpc("create_company_onboarding", { p_name: name, p_document: document, p_phone: phone, p_email: email });
   if (error) {
     console.error("[onboarding] create_company_onboarding failed", { code: error.code, message: error.message });
-    if (error.message.includes("COMPANY_ALREADY_EXISTS")) redirect("/dashboard");
+    if (error.code === "23505" || error.message.includes("COMPANY_ALREADY_EXISTS")) redirect("/dashboard");
     return { error: "Não foi possível criar a empresa. Tente novamente." };
   }
   revalidatePath("/dashboard");
