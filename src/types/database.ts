@@ -24,6 +24,8 @@ export type ServicePhotoType = "PROBLEM" | "BEFORE" | "AFTER" | "GENERAL";
 export type QuoteItemType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
 export type QuoteUnit = "UNIDADE" | "METRO" | "CENTIMETRO" | "METRO_QUADRADO" | "QUILO" | "LITRO" | "KIT";
 export type VisitLineType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
+export type EquipmentModelCategory = "TREADMILL" | "CROSSOVER" | "BIKE" | "ELLIPTICAL" | "LEG_PRESS" | "LEG_EXTENSION" | "LEG_CURL" | "CHEST_PRESS" | "FREE_WEIGHT" | "OTHER";
+export type TechnicalDocumentType = "MANUAL" | "PARTS_CATALOG" | "SCHEMATIC" | "SERVICE_BULLETIN" | "OTHER";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
 export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; }
@@ -31,7 +33,7 @@ export interface Profile extends Timestamps { id: UUID; full_name: string; phone
 export interface UserRole { code: AppRole; name: string; description: string; }
 export interface CompanyMember extends Timestamps { id: UUID; company_id: UUID; profile_id: UUID; role_code: AppRole; status: MemberStatus; }
 export interface Client extends Timestamps { id: UUID; company_id: UUID; name: string; trade_name: string | null; document: string | null; phone: string | null; whatsapp: string | null; email: string | null; address: string | null; city: string | null; state: string | null; notes: string | null; status: string; responsible_name?: string | null; last_visit_at?: ISODate | null; }
-export interface Equipment extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; asset_code: string; name: string; category: string | null; brand: string | null; model: string | null; serial_number: string | null; purchase_date: string | null; installation_date: string | null; location: string | null; status: EquipmentStatus; notes: string | null; primary_photo_path?: string | null; }
+export interface Equipment extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; asset_code: string; name: string; category: string | null; brand: string | null; model: string | null; serial_number: string | null; purchase_date: string | null; installation_date: string | null; location: string | null; status: EquipmentStatus; notes: string | null; primary_photo_path?: string | null; equipment_model_id?: UUID | null; }
 export interface ServiceRequest { id: UUID; company_id: UUID; client_id: UUID; equipment_id: UUID | null; opened_by: UUID; title: string; description: string; priority: RequestPriority; status: RequestStatus; opened_at: ISODate; closed_at: ISODate | null; }
 export interface WorkOrder extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; service_request_id: UUID | null; assigned_technician_id: UUID | null; type: WorkOrderType; status: WorkOrderStatus; scheduled_at: ISODate | null; started_at: ISODate | null; finished_at: ISODate | null; diagnosis: string | null; solution: string | null; customer_notes: string | null; internal_notes: string | null; }
 export interface WorkOrderEquipment { work_order_id: UUID; equipment_id: UUID; problem_description: string | null; service_performed: string | null; status: WorkOrderEquipmentStatus; }
@@ -50,6 +52,13 @@ export interface ServicePhoto { id: UUID; company_id: UUID; visit_id: UUID | nul
 export interface QuoteEquipment { quote_id: UUID; equipment_id: UUID; }
 export interface ServiceVisitMaterial { id: UUID; visit_id: UUID; equipment_id: UUID | null; part_id: UUID | null; line_type: VisitLineType; description: string; quantity: number; unit: QuoteUnit; unit_price: number | null; created_at: ISODate; }
 export interface ServiceVisitService { id: UUID; visit_id: UUID; equipment_id: UUID | null; line_type: VisitLineType; description: string; quantity: number; unit_price: number; created_at: ISODate; }
+export interface Manufacturer extends Timestamps { id: UUID; company_id: UUID; name: string; website: string | null; notes: string | null; }
+export interface EquipmentModel extends Timestamps { id: UUID; company_id: UUID; manufacturer_id: UUID; category: EquipmentModelCategory; model_name: string; model_code: string | null; description: string | null; photo_path: string | null; notes: string | null; }
+export interface TechnicalComponent extends Timestamps { id: UUID; company_id: UUID; name: string; parent_component_id: UUID | null; description: string | null; }
+export interface TechnicalPart extends Timestamps { id: UUID; company_id: UUID; name: string; code: string | null; part_type: string; description: string | null; unit: QuoteUnit; specification: Json; manufacturer_reference: string | null; notes: string | null; }
+export interface ModelComponent { model_id: UUID; component_id: UUID; notes: string | null; }
+export interface ModelPart { model_id: UUID; part_id: UUID; component_id: UUID | null; quantity: number | null; technical_value: string | null; notes: string | null; is_recommended: boolean; source_document_id: UUID | null; source_page: string | null; }
+export interface TechnicalDocument extends Timestamps { id: UUID; company_id: UUID; manufacturer_id: UUID | null; equipment_model_id: UUID | null; title: string; document_type: TechnicalDocumentType; file_path: string | null; source_url: string | null; version: string | null; notes: string | null; }
 
 export interface Database {
   public: {
@@ -78,6 +87,13 @@ export interface Database {
       quote_equipments: TableDefinition<QuoteEquipment>;
       service_visit_materials: TableDefinition<ServiceVisitMaterial>;
       service_visit_services: TableDefinition<ServiceVisitService>;
+      manufacturers: TableDefinition<Manufacturer>;
+      equipment_models: TableDefinition<EquipmentModel>;
+      technical_components: TableDefinition<TechnicalComponent>;
+      technical_parts: TableDefinition<TechnicalPart>;
+      model_components: TableDefinition<ModelComponent>;
+      model_parts: TableDefinition<ModelPart>;
+      technical_documents: TableDefinition<TechnicalDocument>;
     };
     Functions: {
       create_company_onboarding: {

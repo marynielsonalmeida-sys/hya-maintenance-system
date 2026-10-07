@@ -1,0 +1,16 @@
+import Link from "next/link";
+import { BookOpen, Plus, Search } from "lucide-react";
+import { searchTechnicalLibrary } from "@/lib/technical-library/queries";
+
+export const instant = false;
+
+const categoryNames: Record<string, string> = { TREADMILL: "Esteira", CROSSOVER: "Cross over", BIKE: "Bike", ELLIPTICAL: "Elíptico", LEG_PRESS: "Leg press", LEG_EXTENSION: "Cadeira extensora", LEG_CURL: "Mesa flexora", CHEST_PRESS: "Chest press", FREE_WEIGHT: "Peso livre", OTHER: "Outro" };
+
+export default async function TechnicalModelsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const params = await searchParams;
+  const query = params.q ?? "";
+  const result = await searchTechnicalLibrary(query);
+  const counts = new Map<string, number>();
+  result.partLinks.forEach((link) => counts.set(link.model_id, (counts.get(link.model_id) ?? 0) + 1));
+  return <div><div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Conhecimento do prestador</p><h1 className="mt-2 text-3xl font-semibold text-white">Biblioteca técnica</h1><p className="mt-2 text-sm text-slate-400">Modelos, componentes, peças e fontes técnicas da sua empresa.</p></div><Link href="/biblioteca-tecnica/modelos/novo" className="button-primary"><Plus className="h-4 w-4" />Novo modelo</Link></div><form className="relative mb-6"><Search className="absolute left-3 top-3 h-5 w-5 text-slate-500" /><input name="q" defaultValue={query} placeholder="Buscar fabricante, modelo, código, peça ou especificação" className="input h-12 pl-11 text-base" /></form><div className="mb-5 flex items-center gap-2 text-sm text-slate-400"><BookOpen className="h-4 w-4 text-teal-300" />{result.models.length} modelo(s) · {result.parts.length} peça(s) encontrada(s)</div>{result.models.length ? <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">{result.models.map((model) => <Link key={model.id} href={`/biblioteca-tecnica/modelos/${model.id}`} className="rounded-xl border border-white/10 bg-[#0d1a20] p-5 transition hover:border-teal-300/40"><p className="text-xs uppercase tracking-[0.12em] text-teal-300">{categoryNames[model.category] ?? model.category}</p><h2 className="mt-2 text-lg font-semibold text-white">{model.model_name}</h2><p className="mt-1 text-sm text-slate-400">{model.model_code || "Código não informado"}</p><div className="mt-5 flex justify-between text-xs text-slate-500"><span>{counts.get(model.id) ?? 0} peça(s) relacionada(s)</span><span>Ver ficha →</span></div></Link>)}</div> : <div className="rounded-xl border border-dashed border-white/15 p-10 text-center"><p className="font-semibold text-white">Nenhum modelo encontrado</p><p className="mt-2 text-sm text-slate-500">Cadastre o primeiro modelo técnico do prestador.</p><Link href="/biblioteca-tecnica/modelos/novo" className="button-primary mt-5">+ Novo modelo</Link></div>}{result.parts.length > 0 && <section className="mt-8"><h2 className="text-lg font-semibold text-white">Peças encontradas</h2><div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{result.parts.slice(0, 9).map((part) => <Link key={part.id} href="/biblioteca-tecnica/pecas" className="summary-card"><p className="font-semibold text-white">{part.name}</p><p className="mt-1 text-xs text-slate-500">{part.code || "Sem código"} · {part.unit}</p></Link>)}</div></section>}</div>;
+}

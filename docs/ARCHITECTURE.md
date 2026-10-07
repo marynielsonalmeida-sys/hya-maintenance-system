@@ -27,6 +27,7 @@ Academia → Equipamentos → Nova visita → Diagnóstico → Fotos
 | Evidências | `service_photos`, `work_order_photos`, `work_order_signatures` | Fotos antes/depois e futura integração Storage |
 | Materiais | `parts`, `work_order_parts` | Estoque, peças e consumo |
 | Comercial | `quotes`, `quote_items`, `quote_equipments` | Orçamentos técnicos e equipamentos envolvidos |
+| Biblioteca técnica | `manufacturers`, `equipment_models`, `technical_components`, `technical_parts`, `model_components`, `model_parts`, `technical_documents` | Conhecimento reutilizável do prestador |
 | Financeiro | `financial_entries` | Valores, vencimentos e pagamentos |
 | Governança | `audit_logs` | Ações relevantes da empresa |
 
@@ -57,6 +58,16 @@ A futura renderização de PDF usará branding da empresa: `logo_path`, nome com
 
 PDF, WhatsApp e Storage ainda não são integrações reais nesta fase; a migration deixa seus vínculos preparados.
 
+## Biblioteca técnica
+
+A biblioteca pertence inicialmente a cada prestador e não se mistura com estoque. `technical_parts` guarda informação técnica; `parts` e futuros produtos continuam sendo entidades operacionais/comerciais separadas.
+
+`equipment.equipment_model_id` é opcional, então máquinas antigas continuam funcionando sem modelo. Quando preenchido, a Nova Visita pode abrir a ficha técnica e sugerir peças de `model_parts`.
+
+As especificações são `jsonb` chave/valor, permitindo registrar medidas, correias, voltagem, rolamentos e novas propriedades sem migration a cada campo. Busca server-side cobre fabricante, modelo, código, peça e texto da especificação.
+
+Documentos registram manual, catálogo, esquema e boletim com fonte, versão e página; nenhum conteúdo externo é baixado automaticamente.
+
 ## Segurança e multiempresa
 
 O vínculo efetivo é `company_members.role_code`; `user_roles` permanece catálogo global. Toda entidade operacional nova tem `company_id` direto ou herda a empresa pela entidade pai. A migration `0003_field_service_core.sql` habilita RLS e usa `is_company_member`, `can_manage_company` e `can_access_service_visit`.
@@ -68,5 +79,7 @@ O app usa a primeira empresa ativa do usuário por enquanto, mas os helpers já 
 - `0001_initial_schema.sql`: domínio inicial e RLS.
 - `0002_auth_onboarding.sql`: perfil automático e criação segura da primeira empresa.
 - `0003_field_service_core.sql`: núcleo oficial de prestador em campo.
+- `0004_service_visit_workflow.sql`: visita transacional, materiais, serviços e Storage privado.
+- `0005_technical_library.sql`: biblioteca técnica isolada por prestador.
 
-`0003` não deve ser executada automaticamente pela aplicação. Aplicar manualmente no projeto Supabase após revisão.
+`0005` não deve ser executada automaticamente pela aplicação. Aplicar manualmente no projeto Supabase após revisão.

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireCompany } from "@/lib/auth/company";
 import { getAuthErrorMessage, validateCompanyName, validateRegistration } from "@/lib/auth/validation";
+import { getCompatibleTechnicalParts } from "@/lib/technical-library/queries";
 
 export type ActionState = { error?: string; success?: string };
 
@@ -126,4 +127,33 @@ export async function createServiceVisitAction(formData: FormData): Promise<Work
     await supabase.from("service_photos").insert({ company_id: membership.company_id, visit_id: visitId, equipment_id: metadata.equipmentId, type: metadata.type, storage_path: path });
   }
   redirect(`/visitas/${visitId}`);
+}
+
+export async function createManufacturerAction(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) return { error: "Informe o fabricante." };
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const { error } = await supabase.from("manufacturers").insert({ company_id: membership.company_id, name, website: String(formData.get("website") ?? "").trim() || null, notes: String(formData.get("notes") ?? "").trim() || null });
+  if (error) return { error: "Não foi possível salvar o fabricante." };
+  return { success: "Fabricante salvo." };
+}
+
+export async function createEquipmentModelAction(formData: FormData) {
+  const manufacturerId = String(formData.get("manufacturerId") ?? "");
+  const modelName = String(formData.get("modelName") ?? "").trim();
+  if (!manufacturerId || modelName.length < 2) redirect("/biblioteca-tecnica/modelos/novo?error=invalid");
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const { data: manufacturer } = await supabase.from("manufacturers").select("id").eq("id", manufacturerId).eq("company_id", membership.company_id).maybeSingle();
+  if (!manufacturer) redirect("/biblioteca-tecnica/modelos/novo?error=manufacturer");
+  const { data: model, error } = await supabase.from("equipment_models").insert({ company_id: membership.company_id, manufacturer_id: manufacturerId, category: String(formData.get("category") ?? "OTHER"), model_name: modelName, model_code: String(formData.get("modelCode") ?? "").trim() || null, description: String(formData.get("description") ?? "").trim() || null, notes: String(formData.get("notes") ?? "").trim() || null }).select("id").single();
+  if (error || !model) redirect("/biblioteca-tecnica/modelos/novo?error=save");
+  redirect(`/biblioteca-tecnica/modelos/${model.id}`);
+}
+
+export async function getCompatiblePartsAction(modelId: string) {
+  if (!modelId) return { data: [] };
+  const parts = await getCompatibleTechnicalParts(modelId);
+  return { data: parts ?? [] };
 }
