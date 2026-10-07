@@ -1,7 +1,15 @@
 import Link from "next/link";
+import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth-form";
+import { getCurrentMembership, getCurrentUser } from "@/lib/auth/company";
 
-export default function LoginPage() {
+export const instant = false;
+
+export default async function LoginPage() {
+  await connection();
+  const user = await getCurrentUser();
+  if (user) redirect((await getCurrentMembership()) ? "/dashboard" : "/onboarding");
   return <AuthLayout title="Acesse seu sistema" subtitle="Gestão operacional para manutenção de equipamentos."><LoginForm /><p className="mt-6 text-center text-xs text-slate-500">Acesso seguro com Supabase Auth.</p></AuthLayout>;
 }
 
