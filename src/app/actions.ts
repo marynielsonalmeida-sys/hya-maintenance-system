@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireCompany } from "@/lib/auth/company";
 import { getAuthErrorMessage, validateCompanyName, validateRegistration } from "@/lib/auth/validation";
 import { getCompatibleTechnicalParts } from "@/lib/technical-library/queries";
+import { calculateQuoteTotals } from "@/lib/quotes/calculations";
 
 export type ActionState = { error?: string; success?: string };
 
@@ -156,4 +157,58 @@ export async function getCompatiblePartsAction(modelId: string) {
   if (!modelId) return { data: [] };
   const parts = await getCompatibleTechnicalParts(modelId);
   return { data: parts ?? [] };
+}
+
+export async function createQuoteFromVisitAction(formData: FormData): Promise<void> {
+  const visitId = String(formData.get("visitId") ?? "");
+  if (!visitId) redirect("/orcamentos/novo?error=visit");
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const selectedPhotoIds = formData.getAll("photoId").map(String);
+  const [{ data: visit }, { data: materials }, { data: services }, { data: photos }] = await Promise.all([
+    supabase.from("service_visits").select("id, company_id, client_id").eq("id", visitId).eq("company_id", membership.company_id).maybeSingle(),
+    supabase.from("service_visit_materials").select("*").eq("visit_id", visitId),
+    supabase.from("service_visit_services").select("*").eq("visit_id", visitId),
+    supabase.from("service_photos").select("id, type, equipment_id").eq("visit_id", visitId).in("type", ["PROBLEM", "BEFORE"]),
+  ]);
+  if (!visit) redirect("/orcamentos/novo?error=not-found");
+  const rawItems = [
+    ...(materials ?? []).map((item) => ({ equipment_id: item.equipment_id, item_type: item.line_type === "PRODUCT" ? "PRODUCT" : "MATERIAL", description: item.description, quantity: Number(item.quantity), unit: item.unit, unit_price: Number(item.unit_price ?? 0), technical_part_id: null })),
+    ...(services ?? []).map((item) => ({ equipment_id: item.equipment_id, item_type: item.line_type === "LABOR" ? "LABOR" : "SERVICE", description: item.description, quantity: Number(item.quantity), unit: "UNIDADE", unit_price: Number(item.unit_price), technical_part_id: null })),
+  ];
+  const totals = calculateQuoteTotals(rawItems, 0);
+  const quoteNumber = `ORC-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+  const { data: quote, error } = await supabase.from("quotes").insert({ company_id: membership.company_id, client_id: visit.client_id, service_visit_id: visitId, quote_number: quoteNumber, status: "DRAFT", issued_at: new Date().toISOString(), subtotal: totals.subtotal, discount: 0, total: totals.total, notes: null }).select("id").single();
+  if (error || !quote) redirect("/orcamentos/novo?error=save");
+  if (rawItems.length) await supabase.from("quote_items").insert(rawItems.map((item, index) => ({ quote_id: quote.id, line_number: index + 1, ...item, total: Number((item.quantity * item.unit_price).toFixed(2)) })));
+  const equipmentIds = [...new Set(rawItems.map((item) => item.equipment_id).filter((id): id is string => Boolean(id)))];
+  if (equipmentIds.length) await supabase.from("quote_equipments").insert(equipmentIds.map((equipment_id) => ({ quote_id: quote.id, equipment_id })));
+  const selectedPhotos = formData.get("photoSelection") ? (photos ?? []).filter((photo) => selectedPhotoIds.includes(photo.id)) : photos ?? [];
+  if (selectedPhotos.length) await supabase.from("quote_photos").insert(selectedPhotos.map((photo) => ({ quote_id: quote.id, photo_id: photo.id })));
+  redirect(`/orcamentos/${quote.id}`);
+}
+
+export async function updateQuoteStatusAction(formData: FormData): Promise<void> {
+  const quoteId = String(formData.get("quoteId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!quoteId || !["DRAFT", "SENT", "APPROVED", "REJECTED", "EXPIRED", "CONVERTED"].includes(status)) redirect("/orcamentos?error=status");
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const { error } = await supabase.from("quotes").update({ status }).eq("id", quoteId).eq("company_id", membership.company_id);
+  if (error) redirect(`/orcamentos/${quoteId}?error=status`);
+  redirect(`/orcamentos/${quoteId}`);
+}
+
+export async function updateQuoteAction(formData: FormData): Promise<void> {
+  const quoteId = String(formData.get("quoteId") ?? "");
+  const discount = Math.max(0, Number(formData.get("discount") ?? 0));
+  const validUntil = String(formData.get("validUntil") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const { data: items } = await supabase.from("quote_items").select("quantity, unit_price").eq("quote_id", quoteId);
+  const totals = calculateQuoteTotals((items ?? []).map((item) => ({ quantity: Number(item.quantity), unit_price: Number(item.unit_price) })), discount);
+  const { error } = await supabase.from("quotes").update({ ...totals, valid_until: validUntil, notes }).eq("id", quoteId).eq("company_id", membership.company_id);
+  if (error) redirect(`/orcamentos/${quoteId}/editar?error=save`);
+  redirect(`/orcamentos/${quoteId}`);
 }

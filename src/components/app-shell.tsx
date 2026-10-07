@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { BarChart3, BookOpen, Building2, ClipboardList, Cpu, Gauge, Menu, Settings, Users, Wrench } from "lucide-react";
+import { BarChart3, BookOpen, Building2, ClipboardList, Cpu, FileText, Gauge, Menu, Settings, Users, Wrench } from "lucide-react";
 import { getCurrentProfile, requireCompany } from "@/lib/auth/company";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const links = [
   ["/dashboard", "Dashboard", Gauge], ["/clientes", "Clientes", Building2], ["/equipamentos", "Equipamentos", Cpu],
-  ["/chamados", "Chamados", ClipboardList], ["/visitas", "Visitas Técnicas", ClipboardList], ["/biblioteca-tecnica", "Biblioteca Técnica", BookOpen], ["/ordens", "Ordens de Serviço", Wrench], ["/tecnicos", "Técnicos", Users],
+  ["/chamados", "Chamados", ClipboardList], ["/visitas", "Visitas Técnicas", ClipboardList], ["/orcamentos", "Orçamentos", FileText], ["/biblioteca-tecnica", "Biblioteca Técnica", BookOpen], ["/ordens", "Ordens de Serviço", Wrench], ["/tecnicos", "Técnicos", Users],
   ["/pecas", "Peças", Wrench], ["/financeiro", "Financeiro", BarChart3], ["/relatorios", "Relatórios", BarChart3], ["/configuracoes", "Configurações", Settings],
 ] as const;
 

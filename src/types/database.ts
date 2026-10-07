@@ -14,7 +14,7 @@ export type WorkOrderStatus = "DRAFT" | "SCHEDULED" | "IN_PROGRESS" | "WAITING_P
 export type WorkOrderEquipmentStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type PartStatus = "ACTIVE" | "INACTIVE" | "DISCONTINUED";
 export type PhotoType = "BEFORE" | "AFTER" | "GENERAL";
-export type QuoteStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED";
+export type QuoteStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED" | "CONVERTED";
 export type FinancialEntryType = "INCOME" | "EXPENSE";
 export type FinancialEntryStatus = "PENDING" | "PAID" | "OVERDUE" | "CANCELLED";
 export type ServiceVisitType = "PREVENTIVE" | "CORRECTIVE" | "INSPECTION" | "INSTALLATION";
@@ -44,14 +44,15 @@ export interface Part extends Timestamps { id: UUID; company_id: UUID; name: str
 export interface WorkOrderPart { work_order_id: UUID; part_id: UUID; quantity: number; unit_cost: number; unit_price: number; }
 export interface WorkOrderPhoto { id: UUID; company_id: UUID; work_order_id: UUID; equipment_id: UUID | null; type: PhotoType; storage_path: string; caption: string | null; created_at: ISODate; }
 export interface WorkOrderSignature { id: UUID; company_id: UUID; work_order_id: UUID; signer_name: string; signer_document: string | null; signature_path: string; signed_at: ISODate; }
-export interface Quote { id: UUID; company_id: UUID; client_id: UUID; work_order_id: UUID | null; status: QuoteStatus; subtotal: number; discount: number; total: number; valid_until: string | null; notes: string | null; created_at: ISODate; }
-export interface QuoteItem { quote_id: UUID; line_number: number; description: string; quantity: number; unit_price: number; total: number; }
+export interface Quote { id: UUID; company_id: UUID; client_id: UUID; work_order_id: UUID | null; service_visit_id: UUID | null; quote_number: string; status: QuoteStatus; issued_at: ISODate; subtotal: number; discount: number; total: number; valid_until: string | null; notes: string | null; created_at: ISODate; }
+export interface QuoteItem { quote_id: UUID; line_number: number; equipment_id: UUID | null; item_type: QuoteItemType; description: string; quantity: number; unit: QuoteUnit; unit_price: number; total: number; technical_part_id: UUID | null; }
 export interface FinancialEntry extends Timestamps { id: UUID; company_id: UUID; client_id: UUID | null; work_order_id: UUID | null; quote_id: UUID | null; type: FinancialEntryType; category: string; description: string; amount: number; due_date: string | null; paid_at: ISODate | null; status: FinancialEntryStatus; }
 export interface AuditLog { id: UUID; company_id: UUID; user_id: UUID; entity_type: string; entity_id: UUID; action: string; metadata: Json; created_at: ISODate; }
 export interface ServiceVisit extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; technician_id: UUID; type: ServiceVisitType; status: ServiceVisitStatus; started_at: ISODate | null; finished_at: ISODate | null; notes: string | null; }
 export interface ServiceVisitItem { visit_id: UUID; equipment_id: UUID; diagnosis: string | null; recommendation: string | null; status: ServiceVisitItemStatus; }
 export interface ServicePhoto { id: UUID; company_id: UUID; visit_id: UUID | null; equipment_id: UUID | null; quote_id: UUID | null; work_order_id: UUID | null; type: ServicePhotoType; storage_path: string; caption: string | null; created_at: ISODate; }
 export interface QuoteEquipment { quote_id: UUID; equipment_id: UUID; }
+export interface QuotePhoto { quote_id: UUID; photo_id: UUID; }
 export interface ServiceVisitMaterial { id: UUID; visit_id: UUID; equipment_id: UUID | null; part_id: UUID | null; line_type: VisitLineType; description: string; quantity: number; unit: QuoteUnit; unit_price: number | null; created_at: ISODate; }
 export interface ServiceVisitService { id: UUID; visit_id: UUID; equipment_id: UUID | null; line_type: VisitLineType; description: string; quantity: number; unit_price: number; created_at: ISODate; }
 export interface Manufacturer extends Timestamps { id: UUID; company_id: UUID; name: string; website: string | null; notes: string | null; }
@@ -89,6 +90,7 @@ export interface Database {
       service_visit_items: TableDefinition<ServiceVisitItem>;
       service_photos: TableDefinition<ServicePhoto>;
       quote_equipments: TableDefinition<QuoteEquipment>;
+      quote_photos: TableDefinition<QuotePhoto>;
       service_visit_materials: TableDefinition<ServiceVisitMaterial>;
       service_visit_services: TableDefinition<ServiceVisitService>;
       manufacturers: TableDefinition<Manufacturer>;

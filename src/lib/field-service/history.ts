@@ -31,10 +31,13 @@ export async function getEquipmentHistory(equipmentId: string) {
 
   const { data: visitItems } = await supabase.from("service_visit_items").select("*").eq("equipment_id", equipmentId);
   const visitIds = (visitItems ?? []).map((item) => item.visit_id);
-  const [photos, workOrders] = await Promise.all([
+  const [photos, workOrders, quoteLinks] = await Promise.all([
     supabase.from("service_photos").select("*").eq("company_id", companyId).eq("equipment_id", equipmentId).order("created_at", { ascending: false }),
     supabase.from("work_order_equipment").select("*").eq("equipment_id", equipmentId),
+    supabase.from("quote_items").select("quote_id").eq("equipment_id", equipmentId),
   ]);
   const visits = visitIds.length ? await supabase.from("service_visits").select("*").eq("company_id", companyId).in("id", visitIds).order("created_at", { ascending: false }) : { data: [] };
-  return { equipment, visitItems: visitItems ?? [], visits: visits.data ?? [], workOrders: workOrders.data ?? [], photos: photos.data ?? [] };
+  const quoteIds = [...new Set((quoteLinks.data ?? []).map((item) => item.quote_id))];
+  const quotes = quoteIds.length ? await supabase.from("quotes").select("*").eq("company_id", companyId).in("id", quoteIds) : { data: [] };
+  return { equipment, visitItems: visitItems ?? [], visits: visits.data ?? [], workOrders: workOrders.data ?? [], photos: photos.data ?? [], quotes: quotes.data ?? [] };
 }
