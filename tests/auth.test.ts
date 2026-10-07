@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { resolvePostAuthDestination, resolveProtectedDestination } from "../src/lib/auth/routing";
-import { formatCompanyTaxId, isValidCnpj, isValidCpf, normalizeCompanyTaxId, validateCompanyName, validateCompanyTaxId, validateRegistration } from "../src/lib/auth/validation";
+import { formatCompanyPhone, formatCompanyTaxId, isValidCnpj, isValidCpf, normalizeCompanyPhone, normalizeCompanyTaxId, validateCompanyEmail, validateCompanyName, validateCompanyPhone, validateCompanyTaxId, validateRegistration } from "../src/lib/auth/validation";
 
 test("cadastro válido passa e senhas diferentes falham", () => {
   assert.equal(validateRegistration({ fullName: "Marynielson Almeida", email: "user@example.com", password: "secret123", confirmPassword: "secret123" }), null);
@@ -26,6 +26,20 @@ test("CPF e CNPJ exigem documento válido e são normalizados", () => {
 test("máscara de CPF e CNPJ acompanha a quantidade de dígitos", () => {
   assert.equal(formatCompanyTaxId("52998224725"), "529.982.247-25");
   assert.equal(formatCompanyTaxId("11222333000181"), "11.222.333/0001-81");
+});
+
+test("telefone aceita somente 10 ou 11 dígitos e aplica máscara", () => {
+  assert.equal(normalizeCompanyPhone("67abc99171-5592"), "67991715592");
+  assert.equal(formatCompanyPhone("6799171552"), "(67) 9917-1552");
+  assert.equal(formatCompanyPhone("67991715592"), "(67) 99171-5592");
+  assert.equal(validateCompanyPhone("67991715592"), null);
+  assert.equal(validateCompanyPhone("679917155"), "Telefone inválido");
+});
+
+test("e-mail do onboarding é obrigatório e deve ter formato válido", () => {
+  assert.equal(validateCompanyEmail("empresa@exemplo.com"), null);
+  assert.equal(validateCompanyEmail(""), "E-mail inválido");
+  assert.equal(validateCompanyEmail("empresa-invalida"), "E-mail inválido");
 });
 
 test("proteção direciona usuário sem sessão ao login", () => {

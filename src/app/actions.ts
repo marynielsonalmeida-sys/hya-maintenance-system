@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireCompany } from "@/lib/auth/company";
-import { getAuthErrorMessage, normalizeCompanyTaxId, validateCompanyName, validateCompanyTaxId, validateRegistration } from "@/lib/auth/validation";
+import { getAuthErrorMessage, normalizeCompanyPhone, normalizeCompanyTaxId, validateCompanyEmail, validateCompanyName, validateCompanyPhone, validateCompanyTaxId, validateRegistration } from "@/lib/auth/validation";
 import { revalidatePath } from "next/cache";
 import { getCompatibleTechnicalParts } from "@/lib/technical-library/queries";
 import { calculateQuoteTotals } from "@/lib/quotes/calculations";
@@ -41,10 +41,16 @@ export async function createCompanyAction(_: ActionState, formData: FormData): P
   const document = normalizeCompanyTaxId(String(formData.get("document") ?? ""));
   const documentError = validateCompanyTaxId(document);
   if (documentError) return { error: documentError };
+  const phone = normalizeCompanyPhone(String(formData.get("phone") ?? ""));
+  const phoneError = validateCompanyPhone(phone);
+  if (phoneError) return { error: phoneError };
+  const email = String(formData.get("email") ?? "").trim();
+  const emailError = validateCompanyEmail(email);
+  if (emailError) return { error: emailError };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { error } = await supabase.rpc("create_company_onboarding", { p_name: name, p_document: document, p_phone: String(formData.get("phone") ?? "").trim() || null, p_email: String(formData.get("email") ?? "").trim() || user.email || null });
+  const { error } = await supabase.rpc("create_company_onboarding", { p_name: name, p_document: document, p_phone: phone, p_email: email });
   if (error) {
     console.error("[onboarding] create_company_onboarding failed", { code: error.code, message: error.message });
     if (error.message.includes("COMPANY_ALREADY_EXISTS")) redirect("/dashboard");

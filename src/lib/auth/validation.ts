@@ -69,6 +69,25 @@ export function formatCompanyTaxId(value: string) {
   return digits.replace(/^(\d{2})(\d)/, "$1.$2").replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3").replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4").replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
 }
 
+export function normalizeCompanyPhone(value: string) {
+  return value.replace(/\D/g, "").slice(0, 11);
+}
+
+export function formatCompanyPhone(value: string) {
+  const digits = normalizeCompanyPhone(value);
+  if (digits.length <= 10) return digits.replace(/^(\d{2})(\d)/, "($1) $2").replace(/^(\(\d{2}\) \d{4})(\d)/, "$1-$2");
+  return digits.replace(/^(\d{2})(\d)/, "($1) $2").replace(/^(\(\d{2}\) \d{5})(\d)/, "$1-$2");
+}
+
+export function validateCompanyPhone(value: string): string | null {
+  const digits = normalizeCompanyPhone(value);
+  return digits.length === 10 || digits.length === 11 ? null : "Telefone inválido";
+}
+
+export function validateCompanyEmail(value: string): string | null {
+  return /^\S+@\S+\.\S+$/.test(value.trim()) ? null : "E-mail inválido";
+}
+
 export function getAuthErrorMessage(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   if (message.includes("already registered") || message.includes("already been registered")) return "Este e-mail já está cadastrado.";
