@@ -39,15 +39,15 @@ export default function Home() {
       <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-5 py-5 sm:px-8 lg:px-12">
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg border border-[#72e0c0]/50 bg-[#72e0c0]/10 font-mono text-sm font-bold text-[#72e0c0]">GM</div>
-            <div><p className="font-mono text-sm font-bold tracking-[0.2em] text-white">GYM MAINTENANCE</p><p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-[#8ca0a4]">Operations platform</p></div>
+            <div aria-label="Placeholder da logo TecFlow" className="grid h-10 w-10 place-items-center rounded-lg border border-[#72e0c0]/50 bg-[#72e0c0]/10 font-mono text-sm font-bold text-[#72e0c0]">•</div>
+            <div><p className="font-mono text-sm font-bold tracking-[0.2em] text-white">TecFlow</p><p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-[#8ca0a4]">Gestão Técnica</p></div>
           </div>
           <div className="hidden items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#8ca0a4] sm:flex"><span className="h-2 w-2 rounded-full bg-[#72e0c0] shadow-[0_0_12px_#72e0c0]" />Local foundation / v0.1</div>
         </header>
 
         <section className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20 lg:py-20">
           <div className="max-w-2xl">
-            <p className="mb-5 font-mono text-xs font-semibold uppercase tracking-[0.28em] text-[#72e0c0]">Maintenance control center</p>
+            <p className="mb-5 font-mono text-xs font-semibold tracking-[0.12em] text-[#72e0c0]">Seu serviço, seu fluxo, seu controle</p>
             <h1 className="max-w-xl text-5xl font-semibold leading-[0.98] tracking-[-0.05em] text-white sm:text-6xl lg:text-8xl">Gestão de<br /><span className="text-[#72e0c0]">Manutenção</span></h1>
             <p className="mt-7 max-w-lg text-base leading-7 text-[#9db0b3] sm:text-lg">Equipamentos <span className="mx-2 text-[#72e0c0]">•</span> Chamados <span className="mx-2 text-[#72e0c0]">•</span> Ordens de Serviço</p>
             <Link href="/login" className="mt-9 inline-flex items-center gap-3 rounded-md bg-[#72e0c0] px-5 py-3 text-sm font-bold text-[#071015] transition hover:bg-[#a0f0d8]">Entrar no Sistema <ArrowUpRight className="h-4 w-4" /></Link>
