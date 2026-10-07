@@ -26,6 +26,8 @@ export type QuoteUnit = "UNIDADE" | "METRO" | "CENTIMETRO" | "METRO_QUADRADO" | 
 export type VisitLineType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
 export type EquipmentModelCategory = "TREADMILL" | "CROSSOVER" | "BIKE" | "ELLIPTICAL" | "LEG_PRESS" | "LEG_EXTENSION" | "LEG_CURL" | "CHEST_PRESS" | "FREE_WEIGHT" | "OTHER";
 export type TechnicalDocumentType = "MANUAL" | "PARTS_CATALOG" | "SCHEMATIC" | "SERVICE_BULLETIN" | "OTHER";
+export type TechnicalConfidenceStatus = "OFFICIAL_MANUFACTURER" | "FIELD_VERIFIED" | "UNVERIFIED";
+export type TechnicalSourceType = "MANUFACTURER_DOCUMENT" | "FIELD_INSPECTION" | "MANUAL" | "PARTS_CATALOG" | "SCHEMATIC" | "SERVICE_BULLETIN" | "WEB_SOURCE" | "OTHER";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
 export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; }
@@ -55,10 +57,12 @@ export interface ServiceVisitService { id: UUID; visit_id: UUID; equipment_id: U
 export interface Manufacturer extends Timestamps { id: UUID; company_id: UUID; name: string; website: string | null; notes: string | null; }
 export interface EquipmentModel extends Timestamps { id: UUID; company_id: UUID; manufacturer_id: UUID; category: EquipmentModelCategory; model_name: string; model_code: string | null; description: string | null; photo_path: string | null; notes: string | null; }
 export interface TechnicalComponent extends Timestamps { id: UUID; company_id: UUID; name: string; parent_component_id: UUID | null; description: string | null; }
-export interface TechnicalPart extends Timestamps { id: UUID; company_id: UUID; name: string; code: string | null; part_type: string; description: string | null; unit: QuoteUnit; specification: Json; manufacturer_reference: string | null; notes: string | null; }
-export interface ModelComponent { model_id: UUID; component_id: UUID; notes: string | null; }
-export interface ModelPart { model_id: UUID; part_id: UUID; component_id: UUID | null; quantity: number | null; technical_value: string | null; notes: string | null; is_recommended: boolean; source_document_id: UUID | null; source_page: string | null; }
-export interface TechnicalDocument extends Timestamps { id: UUID; company_id: UUID; manufacturer_id: UUID | null; equipment_model_id: UUID | null; title: string; document_type: TechnicalDocumentType; file_path: string | null; source_url: string | null; version: string | null; notes: string | null; }
+export interface ProvenanceFields { confidence_status: TechnicalConfidenceStatus; source_type: TechnicalSourceType | null; source_document_id: UUID | null; source_page: string | null; source_url: string | null; source_notes: string | null; verified_at: ISODate | null; verified_by: UUID | null; }
+export interface TechnicalPart extends Timestamps, ProvenanceFields { id: UUID; company_id: UUID; name: string; code: string | null; part_type: string; description: string | null; unit: QuoteUnit; specification: Json; manufacturer_reference: string | null; notes: string | null; }
+export interface ModelComponent extends ProvenanceFields { model_id: UUID; component_id: UUID; notes: string | null; }
+export interface ModelPart extends ProvenanceFields { model_id: UUID; part_id: UUID; component_id: UUID | null; quantity: number | null; technical_value: string | null; notes: string | null; is_recommended: boolean; }
+export interface TechnicalDocument extends Timestamps, ProvenanceFields { id: UUID; company_id: UUID; manufacturer_id: UUID | null; equipment_model_id: UUID | null; title: string; document_type: TechnicalDocumentType; file_path: string | null; version: string | null; notes: string | null; }
+export interface TechnicalSpecification extends Timestamps, ProvenanceFields { id: UUID; company_id: UUID; equipment_model_id: UUID | null; technical_part_id: UUID | null; specification_key: string; specification_value: string; unit: string | null; }
 
 export interface Database {
   public: {
@@ -94,6 +98,7 @@ export interface Database {
       model_components: TableDefinition<ModelComponent>;
       model_parts: TableDefinition<ModelPart>;
       technical_documents: TableDefinition<TechnicalDocument>;
+      technical_specifications: TableDefinition<TechnicalSpecification>;
     };
     Functions: {
       create_company_onboarding: {

@@ -32,17 +32,18 @@ export async function getEquipmentModelLibrary(modelId: string) {
   if (!model) return null;
   const [{ data: manufacturer }, { data: components }, { data: links }, { data: documents }] = await Promise.all([
     supabase.from("manufacturers").select("*").eq("id", model.manufacturer_id).eq("company_id", membership.company_id).maybeSingle(),
-    supabase.from("model_components").select("model_id, component_id, notes").eq("model_id", modelId),
+    supabase.from("model_components").select("*").eq("model_id", modelId),
     supabase.from("model_parts").select("*").eq("model_id", modelId),
     supabase.from("technical_documents").select("*").eq("equipment_model_id", modelId).eq("company_id", membership.company_id).order("title"),
   ]);
   const componentIds = (components ?? []).map((component) => component.component_id);
   const partIds = (links ?? []).map((link) => link.part_id);
-  const [{ data: componentRows }, { data: partRows }] = await Promise.all([
+  const [{ data: componentRows }, { data: partRows }, { data: specifications }] = await Promise.all([
     componentIds.length ? supabase.from("technical_components").select("*").in("id", componentIds).eq("company_id", membership.company_id) : Promise.resolve({ data: [] }),
     partIds.length ? supabase.from("technical_parts").select("*").in("id", partIds).eq("company_id", membership.company_id) : Promise.resolve({ data: [] }),
+    supabase.from("technical_specifications").select("*").eq("company_id", membership.company_id).or(`equipment_model_id.eq.${modelId}${partIds.length ? `,technical_part_id.in.(${partIds.join(",")})` : ""}`).order("specification_key"),
   ]);
-  return { model, manufacturer, components: componentRows ?? [], parts: partRows ?? [], partLinks: links ?? [], documents: documents ?? [] };
+  return { model, manufacturer, components: componentRows ?? [], componentLinks: components ?? [], parts: partRows ?? [], partLinks: links ?? [], documents: documents ?? [], specifications: specifications ?? [] };
 }
 
 export async function getCompatibleTechnicalParts(modelId: string) {
