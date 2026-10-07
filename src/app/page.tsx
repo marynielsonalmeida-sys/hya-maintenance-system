@@ -22,6 +22,7 @@ const moduleIcons: Record<FutureModuleKey, LucideIcon> = {
   workOrders: Wrench,
   preventive: ShieldCheck,
   corrective: Hammer,
+  visits: ClipboardCheck,
   technicians: Users,
   parts: Wrench,
   quotes: BarChart3,

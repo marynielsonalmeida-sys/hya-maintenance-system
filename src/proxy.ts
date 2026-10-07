@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/config";
 
-const protectedPrefixes = ["/app", "/dashboard", "/clientes", "/equipamentos", "/chamados", "/ordens", "/tecnicos", "/pecas", "/financeiro", "/relatorios", "/configuracoes"];
+const protectedPrefixes = ["/app", "/dashboard", "/clientes", "/equipamentos", "/chamados", "/visitas", "/ordens", "/tecnicos", "/pecas", "/financeiro", "/relatorios", "/configuracoes"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -40,4 +40,4 @@ function redirect(request: NextRequest, path: string) {
   return NextResponse.redirect(url);
 }
 
-export const config = { matcher: ["/login", "/cadastro", "/app/:path*", "/dashboard/:path*", "/clientes/:path*", "/equipamentos/:path*", "/chamados/:path*", "/ordens/:path*", "/tecnicos/:path*", "/pecas/:path*", "/financeiro/:path*", "/relatorios/:path*", "/configuracoes/:path*"] };
+export const config = { matcher: ["/login", "/cadastro", "/app/:path*", "/dashboard/:path*", "/clientes/:path*", "/equipamentos/:path*", "/chamados/:path*", "/visitas/:path*", "/ordens/:path*", "/tecnicos/:path*", "/pecas/:path*", "/financeiro/:path*", "/relatorios/:path*", "/configuracoes/:path*"] };

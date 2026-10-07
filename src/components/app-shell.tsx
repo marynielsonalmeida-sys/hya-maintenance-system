@@ -5,7 +5,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 
 const links = [
   ["/dashboard", "Dashboard", Gauge], ["/clientes", "Clientes", Building2], ["/equipamentos", "Equipamentos", Cpu],
-  ["/chamados", "Chamados", ClipboardList], ["/ordens", "Ordens de Serviço", Wrench], ["/tecnicos", "Técnicos", Users],
+  ["/chamados", "Chamados", ClipboardList], ["/visitas", "Visitas Técnicas", ClipboardList], ["/ordens", "Ordens de Serviço", Wrench], ["/tecnicos", "Técnicos", Users],
   ["/pecas", "Peças", Wrench], ["/financeiro", "Financeiro", BarChart3], ["/relatorios", "Relatórios", BarChart3], ["/configuracoes", "Configurações", Settings],
 ] as const;
 

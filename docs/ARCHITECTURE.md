@@ -1,96 +1,72 @@
-# GYM MAINTENANCE — arquitetura base
+# GYM MAINTENANCE — arquitetura oficial
 
-## Objetivo
+## Produto e público
 
-O núcleo foi desenhado como SaaS multiempresa desde o início. Cada registro operacional pertence a uma `company_id`; isso permite que uma futura conta atenda várias academias, condomínios ou studios sem misturar dados.
+O usuário principal é o **prestador de serviço / empresa terceirizada de manutenção**. A empresa do sistema atende academias e outras empresas em campo.
 
-Esta fase é somente arquitetura. O app não conecta Supabase, não cria login real e não contém credenciais.
+O cliente é a **academia ou empresa atendida**. Cada prestador pode ter várias academias, equipamentos e visitas, sempre isolados por `company_id`.
 
-## Entidades
+## Fluxo central
+
+```text
+Academia → Equipamentos → Nova visita → Diagnóstico → Fotos
+          → Materiais/Peças → Mão de obra → Orçamento → Serviço
+          → Fotos depois → Histórico automático
+```
+
+`service_visits` é a entidade de atendimento em campo. Uma visita pode envolver vários equipamentos por meio de `service_visit_items`. O histórico não é duplicado: é derivado de visitas, diagnósticos, ordens, peças, orçamentos e fotos.
+
+## Entidades principais
 
 | Grupo | Entidades | Responsabilidade |
 | --- | --- | --- |
-| Organização | `companies`, `profiles`, `user_roles`, `company_members` | Empresas, usuários, catálogo de papéis e vínculo usuário–empresa |
-| Operação | `clients`, `equipment` | Estabelecimentos atendidos e seus ativos |
-| Atendimento | `service_requests`, `work_orders`, `work_order_equipment` | Chamados, execução e equipamentos envolvidos |
-| Pessoas | `technician_profiles` | Especialidades e ativação dos técnicos |
-| Materiais | `parts`, `work_order_parts` | Peças, estoque e consumo por OS |
-| Evidências | `work_order_photos`, `work_order_signatures` | Fotos, assinatura e futura integração com Storage |
-| Comercial | `quotes`, `quote_items` | Orçamentos e suas linhas |
-| Financeiro | `financial_entries` | Receitas, despesas, vencimentos e pagamentos |
-| Governança | `audit_logs` | Histórico imutável de ações relevantes |
+| Organização | `companies`, `profiles`, `user_roles`, `company_members` | Prestador, usuários, papéis e isolamento |
+| Academias | `clients`, `equipment` | Empresas atendidas e seus ativos |
+| Campo | `service_visits`, `service_visit_items` | Visitas, diagnóstico e recomendação por máquina |
+| Execução | `service_requests`, `work_orders`, `work_order_equipment` | Chamados e serviços executados |
+| Evidências | `service_photos`, `work_order_photos`, `work_order_signatures` | Fotos antes/depois e futura integração Storage |
+| Materiais | `parts`, `work_order_parts` | Estoque, peças e consumo |
+| Comercial | `quotes`, `quote_items`, `quote_equipments` | Orçamentos técnicos e equipamentos envolvidos |
+| Financeiro | `financial_entries` | Valores, vencimentos e pagamentos |
+| Governança | `audit_logs` | Ações relevantes da empresa |
 
-## Relacionamentos principais
+## Clientes e equipamentos
 
-```text
-Company
-├── Members ── Profile ── TechnicianProfile
-├── Client
-│   └── Equipment
-│       └── WorkOrderEquipment ── WorkOrder
-├── ServiceRequest ──────────────┘
-├── WorkOrder ── WorkOrderParts ── Part
-│            ├─ WorkOrderPhotos
-│            └─ WorkOrderSignatures
-├── Quote ── QuoteItems
-└── FinancialEntry
-```
+`clients` representa academias atendidas e suporta responsável, telefone, WhatsApp, e-mail, endereço, cidade, estado, observações e `last_visit_at`.
 
-- Um cliente pode ter muitos equipamentos.
-- Um chamado pode apontar para um equipamento e pode originar uma ordem de serviço.
-- Uma OS pode envolver vários equipamentos e várias peças.
-- Fotos, assinatura, orçamento e financeiro referenciam a OS quando aplicável.
-- `quote_items` e `work_order_*` usam a entidade pai para determinar a empresa e manter o isolamento.
+`equipment` pertence a um cliente e suporta nome, categoria, marca, modelo, número de série, código interno (`asset_code`), localização, status, observações e `primary_photo_path`. O fluxo futuro de Nova Visita poderá cadastrar um equipamento inline sem abandonar a visita.
 
-## Papéis
+## Visitas e histórico
 
-- `OWNER`: controle total da empresa.
-- `ADMIN`: administração ampla, membros e cadastros.
-- `MANAGER`: gestão operacional, chamados, OS, peças e orçamentos.
-- `TECHNICIAN`: consulta dos dados necessários e atualização das OS atribuídas.
-- `VIEWER`: leitura dos dados da empresa.
+Tipos de visita: `PREVENTIVE`, `CORRECTIVE`, `INSPECTION`, `INSTALLATION`.
 
-O vínculo efetivo fica em `company_members.role_code`. `user_roles` é o catálogo estável de papéis, evitando textos soltos na aplicação.
+`service_photos` aceita associação opcional com visita, equipamento, orçamento e ordem de serviço, com tipos `PROBLEM`, `BEFORE`, `AFTER` e `GENERAL`. O caminho aponta para futura integração com Supabase Storage e câmera do celular.
 
-## RLS preparada
+Os helpers server-only são:
 
-A migration habilita RLS em todas as tabelas e deixa helpers para uso futuro com Supabase Auth:
+- `getClientHistory(clientId)` em `src/lib/field-service/history.ts`;
+- `getEquipmentHistory(equipmentId)` em `src/lib/field-service/history.ts`.
 
-- `is_company_member(company_id)` limita leitura à empresa do usuário.
-- `can_manage_company(company_id)` permite escrita a Owner/Admin/Manager.
-- `can_access_work_order(work_order_id)` permite ao técnico acessar OS atribuída.
+Ambos exigem empresa ativa e filtram por `company_id` antes de consultar os dados.
 
-As policies são uma base inicial. Antes de produção, revisar operações específicas de convite, criação da primeira empresa, upload de Storage e regras de transição de status.
+## Orçamento técnico
 
-## Fluxo principal
+`quote_items` foi preparado com `item_type` (`PRODUCT`, `MATERIAL`, `SERVICE`, `LABOR`) e `unit` (`UNIDADE`, `METRO`, `CENTIMETRO`, `METRO_QUADRADO`, `QUILO`, `LITRO`, `KIT`). `quote_equipments` permite associar vários equipamentos ao mesmo orçamento.
 
-```text
-Cliente
-  → Equipamento
-  → Chamado
-  → Ordem de Serviço
-  → Técnico
-  → Peças / Fotos
-  → Assinatura
-  → Conclusão
-  → Financeiro
-```
+A futura renderização de PDF usará branding da empresa: `logo_path`, nome comercial, razão social, CPF/CNPJ, telefone, WhatsApp, e-mail, endereço, cidade, estado e site.
 
-## Convenções
+PDF, WhatsApp e Storage ainda não são integrações reais nesta fase; a migration deixa seus vínculos preparados.
 
-- IDs usam UUID.
-- Datas e horários usam `timestamptz`; datas de calendário usam `date`.
-- Valores financeiros usam `numeric(12,2)`.
-- `created_at`/`updated_at` são preenchidos no banco; tabelas editáveis usam trigger de atualização.
-- Caminhos de fotos e assinaturas são strings para futura integração com Supabase Storage.
-- O arquivo TypeScript em `src/types/database.ts` espelha o contrato inicial para a UI e futuros adapters.
+## Segurança e multiempresa
 
-## Arquivos
+O vínculo efetivo é `company_members.role_code`; `user_roles` permanece catálogo global. Toda entidade operacional nova tem `company_id` direto ou herda a empresa pela entidade pai. A migration `0003_field_service_core.sql` habilita RLS e usa `is_company_member`, `can_manage_company` e `can_access_service_visit`.
 
-- `supabase/migrations/0001_initial_schema.sql`: schema, enums, índices, triggers e RLS preparada.
-- `src/types/database.ts`: enums e entidades TypeScript.
-- `src/lib/modules.ts`: catálogo de módulos futuros usado pela tela inicial.
+O app usa a primeira empresa ativa do usuário por enquanto, mas os helpers já retornam membership e company separadamente para permitir um seletor futuro.
 
-## Próxima fase
+## Migrations
 
-Definir o fluxo de criação de empresa e convite de membros, escolher a estratégia de autenticação e validar a migration em um projeto Supabase de desenvolvimento. Só depois conectar queries e construir o Dashboard.
+- `0001_initial_schema.sql`: domínio inicial e RLS.
+- `0002_auth_onboarding.sql`: perfil automático e criação segura da primeira empresa.
+- `0003_field_service_core.sql`: núcleo oficial de prestador em campo.
+
+`0003` não deve ser executada automaticamente pela aplicação. Aplicar manualmente no projeto Supabase após revisão.

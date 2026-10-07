@@ -1,6 +1,6 @@
 export type FutureModuleKey =
   | "dashboard" | "clients" | "equipment" | "tickets" | "workOrders"
-  | "preventive" | "corrective" | "technicians" | "parts" | "quotes"
+  | "preventive" | "corrective" | "visits" | "technicians" | "parts" | "quotes"
   | "photos" | "signatures" | "finance" | "reports" | "users";
 
 export const futureModules: Array<{ key: FutureModuleKey; name: string; description: string }> = [
@@ -11,6 +11,7 @@ export const futureModules: Array<{ key: FutureModuleKey; name: string; descript
   { key: "workOrders", name: "Ordens de Serviço", description: "Execução rastreável" },
   { key: "preventive", name: "Manutenção Preventiva", description: "Planos e recorrência" },
   { key: "corrective", name: "Manutenção Corretiva", description: "Resposta a falhas" },
+  { key: "visits", name: "Visitas Técnicas", description: "Atendimento em campo" },
   { key: "technicians", name: "Técnicos", description: "Times e atribuições" },
   { key: "parts", name: "Peças", description: "Estoque e consumo" },
   { key: "quotes", name: "Orçamentos", description: "Aprovação de custos" },

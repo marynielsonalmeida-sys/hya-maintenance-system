@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireCompany } from "@/lib/auth/company";
 
-const labels: Record<string, string> = { clientes: "Clientes", equipamentos: "Equipamentos", chamados: "Chamados", ordens: "Ordens de Serviço", tecnicos: "Técnicos", pecas: "Peças", financeiro: "Financeiro", relatorios: "Relatórios", configuracoes: "Configurações" };
+const labels: Record<string, string> = { clientes: "Clientes / Academias", equipamentos: "Equipamentos", chamados: "Chamados", visitas: "Visitas Técnicas", ordens: "Ordens de Serviço", tecnicos: "Técnicos", pecas: "Peças", financeiro: "Financeiro", relatorios: "Relatórios", configuracoes: "Configurações" };
 
 export default async function ModulePage({ params }: { params: Promise<{ module: string }> }) {
   await requireCompany();

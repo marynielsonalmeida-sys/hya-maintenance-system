@@ -17,14 +17,20 @@ export type PhotoType = "BEFORE" | "AFTER" | "GENERAL";
 export type QuoteStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED";
 export type FinancialEntryType = "INCOME" | "EXPENSE";
 export type FinancialEntryStatus = "PENDING" | "PAID" | "OVERDUE" | "CANCELLED";
+export type ServiceVisitType = "PREVENTIVE" | "CORRECTIVE" | "INSPECTION" | "INSTALLATION";
+export type ServiceVisitStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type ServiceVisitItemStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type ServicePhotoType = "PROBLEM" | "BEFORE" | "AFTER" | "GENERAL";
+export type QuoteItemType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
+export type QuoteUnit = "UNIDADE" | "METRO" | "CENTIMETRO" | "METRO_QUADRADO" | "QUILO" | "LITRO" | "KIT";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
-export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; }
+export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; }
 export interface Profile extends Timestamps { id: UUID; full_name: string; phone: string | null; avatar_path: string | null; }
 export interface UserRole { code: AppRole; name: string; description: string; }
 export interface CompanyMember extends Timestamps { id: UUID; company_id: UUID; profile_id: UUID; role_code: AppRole; status: MemberStatus; }
-export interface Client extends Timestamps { id: UUID; company_id: UUID; name: string; trade_name: string | null; document: string | null; phone: string | null; whatsapp: string | null; email: string | null; address: string | null; city: string | null; state: string | null; notes: string | null; status: string; }
-export interface Equipment extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; asset_code: string; name: string; category: string | null; brand: string | null; model: string | null; serial_number: string | null; purchase_date: string | null; installation_date: string | null; location: string | null; status: EquipmentStatus; notes: string | null; }
+export interface Client extends Timestamps { id: UUID; company_id: UUID; name: string; trade_name: string | null; document: string | null; phone: string | null; whatsapp: string | null; email: string | null; address: string | null; city: string | null; state: string | null; notes: string | null; status: string; responsible_name?: string | null; last_visit_at?: ISODate | null; }
+export interface Equipment extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; asset_code: string; name: string; category: string | null; brand: string | null; model: string | null; serial_number: string | null; purchase_date: string | null; installation_date: string | null; location: string | null; status: EquipmentStatus; notes: string | null; primary_photo_path?: string | null; }
 export interface ServiceRequest { id: UUID; company_id: UUID; client_id: UUID; equipment_id: UUID | null; opened_by: UUID; title: string; description: string; priority: RequestPriority; status: RequestStatus; opened_at: ISODate; closed_at: ISODate | null; }
 export interface WorkOrder extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; service_request_id: UUID | null; assigned_technician_id: UUID | null; type: WorkOrderType; status: WorkOrderStatus; scheduled_at: ISODate | null; started_at: ISODate | null; finished_at: ISODate | null; diagnosis: string | null; solution: string | null; customer_notes: string | null; internal_notes: string | null; }
 export interface WorkOrderEquipment { work_order_id: UUID; equipment_id: UUID; problem_description: string | null; service_performed: string | null; status: WorkOrderEquipmentStatus; }
@@ -37,6 +43,10 @@ export interface Quote { id: UUID; company_id: UUID; client_id: UUID; work_order
 export interface QuoteItem { quote_id: UUID; line_number: number; description: string; quantity: number; unit_price: number; total: number; }
 export interface FinancialEntry extends Timestamps { id: UUID; company_id: UUID; client_id: UUID | null; work_order_id: UUID | null; quote_id: UUID | null; type: FinancialEntryType; category: string; description: string; amount: number; due_date: string | null; paid_at: ISODate | null; status: FinancialEntryStatus; }
 export interface AuditLog { id: UUID; company_id: UUID; user_id: UUID; entity_type: string; entity_id: UUID; action: string; metadata: Json; created_at: ISODate; }
+export interface ServiceVisit extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; technician_id: UUID; type: ServiceVisitType; status: ServiceVisitStatus; started_at: ISODate | null; finished_at: ISODate | null; notes: string | null; }
+export interface ServiceVisitItem { visit_id: UUID; equipment_id: UUID; diagnosis: string | null; recommendation: string | null; status: ServiceVisitItemStatus; }
+export interface ServicePhoto { id: UUID; company_id: UUID; visit_id: UUID | null; equipment_id: UUID | null; quote_id: UUID | null; work_order_id: UUID | null; type: ServicePhotoType; storage_path: string; caption: string | null; created_at: ISODate; }
+export interface QuoteEquipment { quote_id: UUID; equipment_id: UUID; }
 
 export interface Database {
   public: {
@@ -59,6 +69,10 @@ export interface Database {
       quote_items: TableDefinition<QuoteItem>;
       financial_entries: TableDefinition<FinancialEntry>;
       audit_logs: TableDefinition<AuditLog>;
+      service_visits: TableDefinition<ServiceVisit>;
+      service_visit_items: TableDefinition<ServiceVisitItem>;
+      service_photos: TableDefinition<ServicePhoto>;
+      quote_equipments: TableDefinition<QuoteEquipment>;
     };
     Functions: {
       create_company_onboarding: {
