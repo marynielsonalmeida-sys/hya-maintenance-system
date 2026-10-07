@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
-export default function TechnicalLibraryPage() {
+export const instant = false;
+
+export default async function TechnicalLibraryPage() {
+  await connection();
   redirect("/biblioteca-tecnica/modelos");
 }

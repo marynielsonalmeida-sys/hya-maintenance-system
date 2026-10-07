@@ -13,14 +13,14 @@ export type WorkOrderType = "PREVENTIVE" | "CORRECTIVE" | "INSTALLATION" | "INSP
 export type WorkOrderStatus = "DRAFT" | "SCHEDULED" | "IN_PROGRESS" | "WAITING_PARTS" | "COMPLETED" | "CANCELLED";
 export type WorkOrderEquipmentStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type PartStatus = "ACTIVE" | "INACTIVE" | "DISCONTINUED";
-export type PhotoType = "BEFORE" | "AFTER" | "GENERAL";
+export type PhotoType = "BEFORE" | "AFTER" | "DURING" | "GENERAL";
 export type QuoteStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED" | "CONVERTED";
 export type FinancialEntryType = "INCOME" | "EXPENSE";
 export type FinancialEntryStatus = "PENDING" | "PAID" | "OVERDUE" | "CANCELLED";
 export type ServiceVisitType = "PREVENTIVE" | "CORRECTIVE" | "INSPECTION" | "INSTALLATION";
 export type ServiceVisitStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type ServiceVisitItemStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-export type ServicePhotoType = "PROBLEM" | "BEFORE" | "AFTER" | "GENERAL";
+export type ServicePhotoType = "PROBLEM" | "BEFORE" | "DURING" | "AFTER" | "GENERAL";
 export type QuoteItemType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
 export type QuoteUnit = "UNIDADE" | "METRO" | "CENTIMETRO" | "METRO_QUADRADO" | "QUILO" | "LITRO" | "KIT";
 export type VisitLineType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
@@ -37,12 +37,14 @@ export interface CompanyMember extends Timestamps { id: UUID; company_id: UUID; 
 export interface Client extends Timestamps { id: UUID; company_id: UUID; name: string; trade_name: string | null; document: string | null; phone: string | null; whatsapp: string | null; email: string | null; address: string | null; city: string | null; state: string | null; notes: string | null; status: string; responsible_name?: string | null; last_visit_at?: ISODate | null; }
 export interface Equipment extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; asset_code: string; name: string; category: string | null; brand: string | null; model: string | null; serial_number: string | null; purchase_date: string | null; installation_date: string | null; location: string | null; status: EquipmentStatus; notes: string | null; primary_photo_path?: string | null; equipment_model_id?: UUID | null; }
 export interface ServiceRequest { id: UUID; company_id: UUID; client_id: UUID; equipment_id: UUID | null; opened_by: UUID; title: string; description: string; priority: RequestPriority; status: RequestStatus; opened_at: ISODate; closed_at: ISODate | null; }
-export interface WorkOrder extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; service_request_id: UUID | null; assigned_technician_id: UUID | null; type: WorkOrderType; status: WorkOrderStatus; scheduled_at: ISODate | null; started_at: ISODate | null; finished_at: ISODate | null; diagnosis: string | null; solution: string | null; customer_notes: string | null; internal_notes: string | null; }
+export interface WorkOrder extends Timestamps { id: UUID; company_id: UUID; client_id: UUID; service_request_id: UUID | null; assigned_technician_id: UUID | null; type: WorkOrderType; status: WorkOrderStatus; scheduled_at: ISODate | null; started_at: ISODate | null; finished_at: ISODate | null; diagnosis: string | null; solution: string | null; customer_notes: string | null; internal_notes: string | null; quote_id?: UUID | null; service_visit_id?: UUID | null; }
 export interface WorkOrderEquipment { work_order_id: UUID; equipment_id: UUID; problem_description: string | null; service_performed: string | null; status: WorkOrderEquipmentStatus; }
 export interface TechnicianProfile { profile_id: UUID; company_id: UUID; specialties: string[]; active: boolean; }
 export interface Part extends Timestamps { id: UUID; company_id: UUID; name: string; sku: string | null; brand: string | null; unit_cost: number; sale_price: number; stock_quantity: number; minimum_stock: number; status: PartStatus; }
 export interface WorkOrderPart { work_order_id: UUID; part_id: UUID; quantity: number; unit_cost: number; unit_price: number; }
 export interface WorkOrderPhoto { id: UUID; company_id: UUID; work_order_id: UUID; equipment_id: UUID | null; type: PhotoType; storage_path: string; caption: string | null; created_at: ISODate; }
+export type WorkOrderExecutionAction = "REPLACED" | "REPAIRED" | "ADJUSTED" | "INSPECTED" | "CLEANED" | "LUBRICATED" | "INSTALLED" | "REMOVED";
+export interface WorkOrderExecutionItem { id: UUID; company_id: UUID; work_order_id: UUID; equipment_id: UUID | null; technical_part_id: UUID | null; product_id: UUID | null; description: string; quantity: number; unit: string; unit_cost: number | null; unit_price: number | null; action: WorkOrderExecutionAction; notes: string | null; created_at: ISODate; }
 export interface WorkOrderSignature { id: UUID; company_id: UUID; work_order_id: UUID; signer_name: string; signer_document: string | null; signature_path: string; signed_at: ISODate; }
 export interface Quote { id: UUID; company_id: UUID; client_id: UUID; work_order_id: UUID | null; service_visit_id: UUID | null; quote_number: string; status: QuoteStatus; issued_at: ISODate; subtotal: number; discount: number; total: number; valid_until: string | null; notes: string | null; created_at: ISODate; }
 export interface QuoteItem { quote_id: UUID; line_number: number; equipment_id: UUID | null; item_type: QuoteItemType; description: string; quantity: number; unit: QuoteUnit; unit_price: number; total: number; technical_part_id: UUID | null; }
@@ -81,6 +83,7 @@ export interface Database {
       parts: TableDefinition<Part>;
       work_order_parts: TableDefinition<WorkOrderPart>;
       work_order_photos: TableDefinition<WorkOrderPhoto>;
+      work_order_execution_items: TableDefinition<WorkOrderExecutionItem>;
       work_order_signatures: TableDefinition<WorkOrderSignature>;
       quotes: TableDefinition<Quote>;
       quote_items: TableDefinition<QuoteItem>;
@@ -129,6 +132,10 @@ export interface Database {
       };
       create_equipment_quick: {
         Args: { p_client_id: UUID; p_name: string; p_category: string | null; p_brand: string | null; p_model: string | null; p_serial_number: string | null; p_location: string | null };
+        Returns: UUID;
+      };
+      create_work_order_from_quote: {
+        Args: { p_quote_id: UUID };
         Returns: UUID;
       };
     };

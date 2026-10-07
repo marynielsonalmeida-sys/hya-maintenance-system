@@ -7,6 +7,7 @@ import { getAuthErrorMessage, normalizeCompanyPhone, normalizeCompanyTaxId, vali
 import { revalidatePath } from "next/cache";
 import { getCompatibleTechnicalParts } from "@/lib/technical-library/queries";
 import { calculateQuoteTotals } from "@/lib/quotes/calculations";
+import type { PhotoType, WorkOrderExecutionAction, WorkOrderStatus } from "@/types/database";
 
 export type ActionState = { error?: string; success?: string };
 
@@ -82,7 +83,7 @@ export async function createClientQuickAction(formData: FormData): Promise<Workf
   const { data: id, error } = await supabase.rpc("create_client_quick", {
     p_name: name,
     p_responsible_name: String(formData.get("responsibleName") ?? "").trim() || null,
-    p_phone: String(formData.get("phone") ?? "").trim() || null,
+    p_phone: normalizeCompanyPhone(String(formData.get("phone") ?? "")) || null,
     p_email: String(formData.get("email") ?? "").trim() || null,
     p_city: String(formData.get("city") ?? "").trim() || null,
   });
@@ -216,6 +217,120 @@ export async function updateQuoteStatusAction(formData: FormData): Promise<void>
   const { error } = await supabase.from("quotes").update({ status }).eq("id", quoteId).eq("company_id", membership.company_id);
   if (error) redirect(`/orcamentos/${quoteId}?error=status`);
   redirect(`/orcamentos/${quoteId}`);
+}
+
+export async function createWorkOrderFromQuoteAction(formData: FormData): Promise<void> {
+  const quoteId = String(formData.get("quoteId") ?? "");
+  if (!quoteId) redirect("/orcamentos?error=quote");
+  await requireCompany();
+  const supabase = await createClient();
+  const { data: workOrderId, error } = await supabase.rpc("create_work_order_from_quote", { p_quote_id: quoteId });
+  if (error || !workOrderId) {
+    console.error("[work-order] create from quote failed", { code: error?.code, message: error?.message, quoteId });
+    redirect(`/orcamentos/${quoteId}?error=work-order`);
+  }
+  revalidatePath("/ordens");
+  revalidatePath(`/orcamentos/${quoteId}`);
+  redirect(`/ordens/${workOrderId}`);
+}
+
+const workOrderStatuses: WorkOrderStatus[] = ["DRAFT", "SCHEDULED", "IN_PROGRESS", "WAITING_PARTS", "COMPLETED", "CANCELLED"];
+
+export async function updateWorkOrderStatusAction(formData: FormData): Promise<void> {
+  const workOrderId = String(formData.get("workOrderId") ?? "");
+  const status = String(formData.get("status") ?? "") as WorkOrderStatus;
+  if (!workOrderId || !workOrderStatuses.includes(status)) redirect("/ordens?error=status");
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const updates: Record<string, string | null> = { status };
+  if (status === "IN_PROGRESS") updates.started_at = new Date().toISOString();
+  if (status === "COMPLETED") updates.finished_at = new Date().toISOString();
+  const { error } = await supabase.from("work_orders").update(updates).eq("id", workOrderId).eq("company_id", membership.company_id);
+  if (error) {
+    console.error("[work-order] status update failed", { code: error.code, message: error.message, workOrderId, status });
+    redirect(`/ordens/${workOrderId}?error=status`);
+  }
+  revalidatePath("/ordens");
+  revalidatePath(`/ordens/${workOrderId}`);
+  redirect(`/ordens/${workOrderId}`);
+}
+
+const executionActions: WorkOrderExecutionAction[] = ["REPLACED", "REPAIRED", "ADJUSTED", "INSPECTED", "CLEANED", "LUBRICATED", "INSTALLED", "REMOVED"];
+
+export async function addWorkOrderExecutionItemAction(formData: FormData): Promise<void> {
+  const workOrderId = String(formData.get("workOrderId") ?? "");
+  const equipmentId = String(formData.get("equipmentId") ?? "") || null;
+  const description = String(formData.get("description") ?? "").trim();
+  const action = String(formData.get("action") ?? "") as WorkOrderExecutionAction;
+  const quantity = Number(formData.get("quantity") ?? 1);
+  if (!workOrderId || !description || !executionActions.includes(action) || !Number.isFinite(quantity) || quantity <= 0) redirect(`/ordens/${workOrderId}?error=item`);
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const { data: workOrder } = await supabase.from("work_orders").select("id").eq("id", workOrderId).eq("company_id", membership.company_id).maybeSingle();
+  if (!workOrder) redirect("/ordens?error=not-found");
+  const { error } = await supabase.from("work_order_execution_items").insert({
+    company_id: membership.company_id,
+    work_order_id: workOrderId,
+    equipment_id: equipmentId,
+    technical_part_id: String(formData.get("technicalPartId") ?? "") || null,
+    product_id: String(formData.get("productId") ?? "") || null,
+    description,
+    quantity,
+    unit: String(formData.get("unit") ?? "UNIDADE"),
+    unit_cost: Number(formData.get("unitCost") ?? 0) || null,
+    unit_price: Number(formData.get("unitPrice") ?? 0) || null,
+    action,
+    notes: String(formData.get("notes") ?? "").trim() || null,
+  });
+  if (error) {
+    console.error("[work-order] execution item failed", { code: error.code, message: error.message, workOrderId });
+    redirect(`/ordens/${workOrderId}?error=item`);
+  }
+  revalidatePath(`/ordens/${workOrderId}`);
+  redirect(`/ordens/${workOrderId}`);
+}
+
+export async function updateWorkOrderEquipmentAction(formData: FormData): Promise<void> {
+  const workOrderId = String(formData.get("workOrderId") ?? "");
+  const equipmentId = String(formData.get("equipmentId") ?? "");
+  await requireCompany();
+  const supabase = await createClient();
+  const { error } = await supabase.from("work_order_equipment").update({
+    service_performed: String(formData.get("servicePerformed") ?? "").trim() || null,
+    technical_notes: String(formData.get("technicalNotes") ?? "").trim() || null,
+    status: String(formData.get("status") ?? "IN_PROGRESS"),
+  }).eq("work_order_id", workOrderId).eq("equipment_id", equipmentId);
+  if (error) {
+    console.error("[work-order] equipment update failed", { code: error.code, message: error.message, workOrderId, equipmentId });
+    redirect(`/ordens/${workOrderId}?error=equipment`);
+  }
+  revalidatePath(`/ordens/${workOrderId}`);
+  redirect(`/ordens/${workOrderId}`);
+}
+
+export async function uploadWorkOrderPhotoAction(formData: FormData): Promise<void> {
+  const workOrderId = String(formData.get("workOrderId") ?? "");
+  const equipmentId = String(formData.get("equipmentId") ?? "") || null;
+  const type = String(formData.get("type") ?? "") as PhotoType;
+  const file = formData.get("file");
+  if (!workOrderId || !(file instanceof File) || file.size === 0 || !["BEFORE", "AFTER", "DURING", "GENERAL"].includes(type)) redirect(`/ordens/${workOrderId}?error=photo`);
+  if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) redirect(`/ordens/${workOrderId}?error=photo`);
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const extension = file.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+  const storagePath = `${membership.company_id}/work-orders/${workOrderId}/${crypto.randomUUID()}.${extension}`;
+  const upload = await supabase.storage.from("service-photos").upload(storagePath, file, { contentType: file.type, upsert: false });
+  if (upload.error) {
+    console.error("[work-order] photo upload failed", { code: upload.error.name, message: upload.error.message, workOrderId });
+    redirect(`/ordens/${workOrderId}?error=photo`);
+  }
+  const { error } = await supabase.from("work_order_photos").insert({ company_id: membership.company_id, work_order_id: workOrderId, equipment_id: equipmentId, type, storage_path: storagePath, caption: String(formData.get("caption") ?? "").trim() || null });
+  if (error) {
+    console.error("[work-order] photo record failed", { code: error.code, message: error.message, workOrderId });
+    redirect(`/ordens/${workOrderId}?error=photo`);
+  }
+  revalidatePath(`/ordens/${workOrderId}`);
+  redirect(`/ordens/${workOrderId}`);
 }
 
 export async function updateQuoteAction(formData: FormData): Promise<void> {
