@@ -19,7 +19,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     </aside>
     <div className="min-w-0 flex-1">
       <header className="flex h-16 items-center justify-between border-b border-white/10 px-5 sm:px-8">
-        <div className="flex items-center gap-3"><Menu className="h-5 w-5 text-teal-300 lg:hidden" /><div><p className="text-sm font-semibold text-white">{membership.company.name}</p><p className="text-xs text-slate-500">{profile?.full_name ?? "Usuário"} · {membership.role_code}</p></div></div><SignOutButton />
+        <div className="flex items-center gap-3"><MobileNav /><div><p className="text-sm font-semibold text-white">{membership.company.name}</p><p className="text-xs text-slate-500">{profile?.full_name ?? "Usuário"} · {membership.role_code}</p></div></div><SignOutButton />
       </header>
       <main className="p-5 sm:p-8">{children}</main>
     </div>
@@ -27,3 +27,5 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function Brand() { return <Link href="/dashboard" className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg border border-teal-300/50 bg-teal-300/10 font-mono text-sm font-bold text-teal-300">GM</div><div><p className="font-mono text-sm font-bold tracking-[0.16em] text-white">GYM</p><p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Maintenance</p></div></Link>; }
+
+function MobileNav() { return <details className="relative lg:hidden"><summary className="grid h-9 w-9 cursor-pointer list-none place-items-center rounded-lg border border-white/10 text-teal-300"><Menu className="h-5 w-5" /></summary><div className="absolute left-0 top-11 z-20 w-60 rounded-xl border border-white/10 bg-[#0d1a20] p-2 shadow-2xl">{links.map(([href, label, Icon]) => <Link key={href} href={href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white"><Icon className="h-4 w-4 text-teal-300" />{label}</Link>)}</div></details>; }

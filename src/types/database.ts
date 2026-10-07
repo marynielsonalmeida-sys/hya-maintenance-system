@@ -23,6 +23,7 @@ export type ServiceVisitItemStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "
 export type ServicePhotoType = "PROBLEM" | "BEFORE" | "AFTER" | "GENERAL";
 export type QuoteItemType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
 export type QuoteUnit = "UNIDADE" | "METRO" | "CENTIMETRO" | "METRO_QUADRADO" | "QUILO" | "LITRO" | "KIT";
+export type VisitLineType = "PRODUCT" | "MATERIAL" | "SERVICE" | "LABOR";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
 export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; }
@@ -47,6 +48,8 @@ export interface ServiceVisit extends Timestamps { id: UUID; company_id: UUID; c
 export interface ServiceVisitItem { visit_id: UUID; equipment_id: UUID; diagnosis: string | null; recommendation: string | null; status: ServiceVisitItemStatus; }
 export interface ServicePhoto { id: UUID; company_id: UUID; visit_id: UUID | null; equipment_id: UUID | null; quote_id: UUID | null; work_order_id: UUID | null; type: ServicePhotoType; storage_path: string; caption: string | null; created_at: ISODate; }
 export interface QuoteEquipment { quote_id: UUID; equipment_id: UUID; }
+export interface ServiceVisitMaterial { id: UUID; visit_id: UUID; equipment_id: UUID | null; part_id: UUID | null; line_type: VisitLineType; description: string; quantity: number; unit: QuoteUnit; unit_price: number | null; created_at: ISODate; }
+export interface ServiceVisitService { id: UUID; visit_id: UUID; equipment_id: UUID | null; line_type: VisitLineType; description: string; quantity: number; unit_price: number; created_at: ISODate; }
 
 export interface Database {
   public: {
@@ -73,6 +76,8 @@ export interface Database {
       service_visit_items: TableDefinition<ServiceVisitItem>;
       service_photos: TableDefinition<ServicePhoto>;
       quote_equipments: TableDefinition<QuoteEquipment>;
+      service_visit_materials: TableDefinition<ServiceVisitMaterial>;
+      service_visit_services: TableDefinition<ServiceVisitService>;
     };
     Functions: {
       create_company_onboarding: {
@@ -82,6 +87,25 @@ export interface Database {
           p_phone: string | null;
           p_email: string | null;
         };
+        Returns: UUID;
+      };
+      create_service_visit: {
+        Args: {
+          p_client_id: UUID;
+          p_type: ServiceVisitType;
+          p_notes: string | null;
+          p_items: Json;
+          p_materials: Json;
+          p_services: Json;
+        };
+        Returns: UUID;
+      };
+      create_client_quick: {
+        Args: { p_name: string; p_responsible_name: string | null; p_phone: string | null; p_email: string | null; p_city: string | null };
+        Returns: UUID;
+      };
+      create_equipment_quick: {
+        Args: { p_client_id: UUID; p_name: string; p_category: string | null; p_brand: string | null; p_model: string | null; p_serial_number: string | null; p_location: string | null };
         Returns: UUID;
       };
     };
