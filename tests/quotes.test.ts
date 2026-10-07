@@ -15,4 +15,7 @@ test("migration suporta visita, itens, fotos, peça técnica e isolamento", () =
   assert.match(migration, /technical_part_id/);
   assert.match(migration, /public\.can_manage_company\(company_id\)/);
   assert.match(migration, /CONVERTED/);
+  assert.doesNotMatch(migration, /add column(?: if not exists)? item_type/);
+  assert.match(migration, /add column if not exists equipment_id/);
+  assert.match(migration, /create table if not exists public\.quote_photos/);
 });
