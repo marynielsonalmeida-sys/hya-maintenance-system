@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { BarChart3, BookOpen, Building2, ClipboardList, Cpu, FileText, Gauge, Menu, Settings, Users, Wrench } from "lucide-react";
+import { BarChart3, BookOpen, Building2, ClipboardList, Cpu, FileText, Gauge, Menu, ReceiptText, Settings, Users, Wrench } from "lucide-react";
 import { getCurrentProfile, requireCompany } from "@/lib/auth/company";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getCompanyLogoUrl } from "@/lib/company/settings";
@@ -8,7 +8,7 @@ import { getCompanyLogoUrl } from "@/lib/company/settings";
 const links = [
   ["/dashboard", "Dashboard", Gauge], ["/clientes", "Clientes", Building2], ["/equipamentos", "Equipamentos", Cpu],
   ["/chamados", "Chamados", ClipboardList], ["/visitas", "Visitas Técnicas", ClipboardList], ["/orcamentos", "Orçamentos", FileText], ["/biblioteca-tecnica", "Biblioteca Técnica", BookOpen], ["/ordens", "Ordens de Serviço", Wrench], ["/tecnicos", "Técnicos", Users],
-  ["/pecas", "Peças", Wrench], ["/financeiro", "Financeiro", BarChart3], ["/relatorios", "Relatórios", BarChart3], ["/configuracoes", "Configurações", Settings],
+  ["/pecas", "Peças", Wrench], ["/meu-contador", "Meu Contador", ReceiptText], ["/financeiro", "Financeiro", BarChart3], ["/relatorios", "Relatórios", BarChart3], ["/configuracoes", "Configurações", Settings],
 ] as const;
 
 export async function AppShell({ children }: { children: React.ReactNode }) {

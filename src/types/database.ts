@@ -28,6 +28,11 @@ export type EquipmentModelCategory = "TREADMILL" | "CROSSOVER" | "BIKE" | "ELLIP
 export type TechnicalDocumentType = "MANUAL" | "PARTS_CATALOG" | "SCHEMATIC" | "SERVICE_BULLETIN" | "OTHER";
 export type TechnicalConfidenceStatus = "OFFICIAL_MANUFACTURER" | "FIELD_VERIFIED" | "UNVERIFIED";
 export type TechnicalSourceType = "MANUFACTURER_DOCUMENT" | "FIELD_INSPECTION" | "MANUAL" | "PARTS_CATALOG" | "SCHEMATIC" | "SERVICE_BULLETIN" | "WEB_SOURCE" | "OTHER";
+export type FiscalInvoiceStatus = "DRAFT" | "PROCESSING" | "AUTHORIZED" | "REJECTED" | "CANCELLED" | "EXTERNAL";
+export type PurchaseInvoiceStatus = "IMPORTED" | "PENDING_REVIEW" | "POSTED" | "CANCELLED";
+export type InventoryMovementType = "PURCHASE_IN" | "SERVICE_OUT" | "MANUAL_IN" | "MANUAL_OUT" | "ADJUSTMENT" | "RETURN_IN" | "RETURN_OUT";
+export type ObligationStatus = "PENDING" | "READY" | "PAID" | "OVERDUE" | "NOT_APPLICABLE";
+export type AccountingDocumentCategory = "FISCAL" | "COMPRA" | "RH" | "CONTABIL" | "CONTRATO" | "OUTRO";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
 export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; postal_code?: string | null; street?: string | null; address_number?: string | null; complement?: string | null; neighborhood?: string | null; }
@@ -66,6 +71,16 @@ export interface ModelComponent extends ProvenanceFields { model_id: UUID; compo
 export interface ModelPart extends ProvenanceFields { model_id: UUID; part_id: UUID; component_id: UUID | null; quantity: number | null; technical_value: string | null; notes: string | null; is_recommended: boolean; }
 export interface TechnicalDocument extends Timestamps, ProvenanceFields { id: UUID; company_id: UUID; manufacturer_id: UUID | null; equipment_model_id: UUID | null; title: string; document_type: TechnicalDocumentType; file_path: string | null; version: string | null; notes: string | null; }
 export interface TechnicalSpecification extends Timestamps, ProvenanceFields { id: UUID; company_id: UUID; equipment_model_id: UUID | null; technical_part_id: UUID | null; specification_key: string; specification_value: string; unit: string | null; }
+export interface Supplier extends Timestamps { id: UUID; company_id: UUID; legal_name: string; trade_name: string | null; document: string; phone: string | null; email: string | null; address: string | null; city: string | null; state: string | null; active: boolean; }
+export interface InventoryProduct extends Timestamps { id: UUID; company_id: UUID; sku: string | null; name: string; description: string | null; unit: string; ncm: string | null; current_stock: number; minimum_stock: number; average_cost: number; sale_price: number | null; active: boolean; }
+export interface SupplierProductMapping extends Timestamps { id: UUID; company_id: UUID; supplier_id: UUID; inventory_product_id: UUID; supplier_code: string; description: string | null; unit_cost: number | null; }
+export interface PurchaseInvoice extends Timestamps { id: UUID; company_id: UUID; supplier_id: UUID | null; access_key: string; number: string | null; series: string | null; issued_at: ISODate | null; supplier_document: string | null; supplier_name: string | null; recipient_document: string | null; total_amount: number; status: PurchaseInvoiceStatus; xml_path: string | null; pdf_path: string | null; raw_metadata: Json; }
+export interface PurchaseInvoiceItem { id: UUID; company_id: UUID; purchase_invoice_id: UUID; product_id: UUID | null; supplier_description: string; supplier_code: string | null; ncm: string | null; cfop: string | null; unit: string | null; quantity: number; unit_cost: number; total_cost: number; taxes: Json; created_at: ISODate; }
+export interface InventoryMovement { id: UUID; company_id: UUID; product_id: UUID; type: InventoryMovementType; quantity: number; unit_cost: number | null; source_type: string | null; source_id: UUID | null; notes: string | null; created_by: UUID | null; created_at: ISODate; }
+export interface FiscalInvoice extends Timestamps { id: UUID; company_id: UUID; client_id: UUID | null; quote_id: UUID | null; work_order_id: UUID | null; invoice_type: string; status: FiscalInvoiceStatus; number: string | null; series: string | null; access_key: string | null; issued_at: ISODate | null; total_amount: number; provider_code: string | null; provider_message: string | null; pdf_path: string | null; xml_path: string | null; external_reference: string | null; }
+export interface CompanyObligation extends Timestamps { id: UUID; company_id: UUID; type: string; title: string; description: string | null; due_date: string | null; status: ObligationStatus; source: string; reference_period: string | null; amount: number | null; paid_at: ISODate | null; }
+export interface AccountingDocument extends Timestamps { id: UUID; company_id: UUID; name: string; category: AccountingDocumentCategory; competence: string | null; document_date: string | null; notes: string | null; storage_path: string; }
+export interface FiscalSettings extends Timestamps { company_id: UUID; municipal_registration: string | null; state_registration: string | null; tax_regime: string | null; primary_cnae: string | null; municipality_code: string | null; has_employees: boolean | null; provides_services: boolean | null; sells_products: boolean | null; fiscal_enabled: boolean; provider_code: string | null; }
 
 export interface Database {
   public: {
@@ -104,6 +119,16 @@ export interface Database {
       model_parts: TableDefinition<ModelPart>;
       technical_documents: TableDefinition<TechnicalDocument>;
       technical_specifications: TableDefinition<TechnicalSpecification>;
+      suppliers: TableDefinition<Supplier>;
+      inventory_products: TableDefinition<InventoryProduct>;
+      supplier_product_mappings: TableDefinition<SupplierProductMapping>;
+      purchase_invoices: TableDefinition<PurchaseInvoice>;
+      purchase_invoice_items: TableDefinition<PurchaseInvoiceItem>;
+      inventory_movements: TableDefinition<InventoryMovement>;
+      fiscal_invoices: TableDefinition<FiscalInvoice>;
+      company_obligations: TableDefinition<CompanyObligation>;
+      accounting_documents: TableDefinition<AccountingDocument>;
+      fiscal_settings: TableDefinition<FiscalSettings>;
     };
     Functions: {
       create_company_onboarding: {
@@ -138,6 +163,7 @@ export interface Database {
         Args: { p_quote_id: UUID };
         Returns: UUID;
       };
+      post_purchase_invoice: { Args: { p_invoice_id: UUID }; Returns: boolean };
     };
     Views: Record<string, never>;
     Enums: Record<string, never>;

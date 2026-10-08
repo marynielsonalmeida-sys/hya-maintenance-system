@@ -1,0 +1,3 @@
+import { AccountingHeader, TableOrEmpty } from "@/components/accounting/ui"; import { getFiscalInvoices } from "@/lib/accounting/queries";
+export const instant = false;
+export default async function IssuedPage() { const rows = await getFiscalInvoices(); return <><AccountingHeader title="Notas emitidas" description="Acompanhe documentos fiscais de serviço desta empresa." /><TableOrEmpty headers={["Número", "Provedor", "Status", "Total"]} rows={rows.map((row) => [String(row.number ?? "—"), String(row.provider_code ?? "—"), String(row.status ?? "—"), `R$ ${Number(row.total_amount ?? 0).toFixed(2)}`])} /></>; }
