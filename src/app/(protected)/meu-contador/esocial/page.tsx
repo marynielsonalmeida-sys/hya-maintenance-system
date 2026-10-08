@@ -1,0 +1,3 @@
+import { AccountingHeader } from "@/components/accounting/ui";
+export const instant = false;
+export default function EsocialPage() { return <><AccountingHeader title="eSocial" description="Informações trabalhistas preparadas com clareza." /><div className="max-w-2xl rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-6"><p className="font-medium text-amber-200">Integração ainda não configurada</p><p className="mt-2 text-sm text-slate-300">O eSocial é o canal usado para enviar informações de empregados ao governo. O TecFlow poderá preparar eventos para revisão, mas não simula envios.</p><p className="mt-5 text-sm text-slate-400">Fila futura: preparado · precisa revisar · pronto · enviado · aceito · rejeitado.</p></div></>; }

@@ -2,9 +2,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireCompany } from "@/lib/auth/company";
+import { requireFeature } from "@/lib/access/entitlements";
 import { parseNfeXml } from "@/lib/accounting/xml";
 import { getFiscalProvider } from "@/lib/accounting/provider";
+
+const requireCompany = () => requireFeature("ACCOUNTING");
 
 export async function importPurchaseInvoiceXmlAction(formData: FormData): Promise<void> {
   const membership = await requireCompany(); const file = formData.get("file");

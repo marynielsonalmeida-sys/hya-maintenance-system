@@ -33,9 +33,11 @@ export type PurchaseInvoiceStatus = "IMPORTED" | "PENDING_REVIEW" | "POSTED" | "
 export type InventoryMovementType = "PURCHASE_IN" | "SERVICE_OUT" | "MANUAL_IN" | "MANUAL_OUT" | "ADJUSTMENT" | "RETURN_IN" | "RETURN_OUT";
 export type ObligationStatus = "PENDING" | "READY" | "PAID" | "OVERDUE" | "NOT_APPLICABLE";
 export type AccountingDocumentCategory = "FISCAL" | "COMPRA" | "RH" | "CONTABIL" | "CONTRATO" | "OUTRO";
+export type PlanCode = "BASIC" | "PRO";
+export type FeatureCode = "ACCOUNTING" | "FISCAL" | "INVOICES" | "FISCAL_ARCHIVE" | "INVENTORY_FISCAL" | "HR" | "EMPLOYEES" | "PAYROLL" | "ESOCIAL" | "FGTS" | "OBLIGATIONS" | "ACCOUNTING_DOCUMENTS" | "ACCOUNTANT_PORTAL";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
-export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; postal_code?: string | null; street?: string | null; address_number?: string | null; complement?: string | null; neighborhood?: string | null; }
+export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; plan_code?: PlanCode; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; postal_code?: string | null; street?: string | null; address_number?: string | null; complement?: string | null; neighborhood?: string | null; }
 export interface Profile extends Timestamps { id: UUID; full_name: string; phone: string | null; avatar_path: string | null; }
 export interface UserRole { code: AppRole; name: string; description: string; }
 export interface CompanyMember extends Timestamps { id: UUID; company_id: UUID; profile_id: UUID; role_code: AppRole; status: MemberStatus; }

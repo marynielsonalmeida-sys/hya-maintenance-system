@@ -1,0 +1,3 @@
+import { AccountingHeader } from "@/components/accounting/ui";
+export const instant = false;
+export default function FgtsPage() { return <><AccountingHeader title="FGTS Digital" description="Acompanhe guias e comprovantes com origem clara." /><div className="max-w-2xl rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-6 text-sm text-slate-300">O FGTS Digital utiliza dados declarados pelo empregador no eSocial. Sem integração ativa, consulte ou importe sua guia; o TecFlow não cria cálculos paralelos.</div></>; }

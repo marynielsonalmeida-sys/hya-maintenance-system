@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { requireCompany } from "@/lib/auth/company";
+import { requireFeature } from "@/lib/access/entitlements";
+const requireCompany = () => requireFeature("ACCOUNTING");
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(client: unknown) { return client as any; }
 export async function getAccountingDashboard() { const membership = await requireCompany(); const supabase = await createClient(); const companyId = membership.company_id; const names = ["fiscal_invoices", "purchase_invoices", "inventory_products", "suppliers", "company_obligations"]; const counts = await Promise.all(names.map(async (name) => { const { count } = await db(supabase).from(name).select("id", { count: "exact", head: true }).eq("company_id", companyId); return [name, count ?? 0] as const; })); const map = Object.fromEntries(counts); const { count: lowStock } = await db(supabase).from("inventory_products").select("id", { count: "exact", head: true }).eq("company_id", companyId).filter("current_stock", "lte", "minimum_stock"); const { count: pending } = await db(supabase).from("purchase_invoices").select("id", { count: "exact", head: true }).eq("company_id", companyId).in("status", ["IMPORTED", "PENDING_REVIEW"]); return { issued: map.fiscal_invoices ?? 0, purchases: map.purchase_invoices ?? 0, stock: map.inventory_products ?? 0, suppliers: map.suppliers ?? 0, obligations: map.company_obligations ?? 0, lowStock: lowStock ?? 0, pending: pending ?? 0 }; }
@@ -10,5 +11,9 @@ export const getSuppliers = () => list("suppliers", "id,legal_name,trade_name,do
 export const getInventoryProducts = () => list("inventory_products", "id,sku,name,unit,current_stock,minimum_stock,average_cost,active");
 export const getObligations = () => list("company_obligations", "id,title,type,reference_period,due_date,status,description");
 export const getFiscalInvoices = () => list("fiscal_invoices", "id,number,status,provider_code,total_amount,issued_at,provider_message");
+export async function searchFiscalInvoices(term = "") { const membership = await requireCompany(); const supabase = await createClient(); const query = db(supabase).from("fiscal_invoices").select("id,number,series,status,access_key,total_amount,issued_at,provider_code").eq("company_id", membership.company_id).order("created_at", { ascending: false }); const { data, error } = term ? await query.or(`number.ilike.%${term}%,series.ilike.%${term}%,access_key.ilike.%${term}%`) : await query; if (error) { console.error("[accounting] invoice search failed", { code: error.code, message: error.message, companyId: membership.company_id }); return []; } return (data ?? []) as Record<string, unknown>[]; }
 export const getAccountingDocuments = () => list("accounting_documents", "id,category,name,document_date,storage_path,notes,created_at");
 export async function getFiscalSettings() { const membership = await requireCompany(); const supabase = await createClient(); const { data } = await db(supabase).from("fiscal_settings").select("*").eq("company_id", membership.company_id).maybeSingle(); return data; }
+export const getEmployees = () => list("employees", "id,full_name,document,job_title,hire_date,status,department");
+export const getVacations = () => list("employee_vacations", "id,employee_id,starts_on,ends_on,status,notes");
+export const getGuides = () => list("payroll_guides", "id,guide_type,competence,due_date,amount,status,source");
