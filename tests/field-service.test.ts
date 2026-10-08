@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { appendDiagnosis, calculateVisitTotal, isCompanyRecordAllowed, toggleSelection, validateVisitDraft } from "../src/lib/field-service/workflow";
 
 test("seleção de cliente e múltiplos equipamentos é determinística", () => {
@@ -26,4 +27,19 @@ test("salvamento exige cliente e equipamento", () => {
 test("isolamento impede registro de outra empresa", () => {
   assert.equal(isCompanyRecordAllowed("company-a", "company-a"), true);
   assert.equal(isCompanyRecordAllowed("company-b", "company-a"), false);
+});
+
+test("cadastro rápido recarrega registros e registra erros sem expor segredo", () => {
+  const source = readFileSync("src/app/actions.ts", "utf8");
+  const wizard = readFileSync("src/components/visits/new-visit-wizard.tsx", "utf8");
+  assert.match(source, /quick client reload failed/);
+  assert.match(source, /quick equipment reload failed/);
+  assert.match(wizard, /setClients\(\(current\) => \[\.\.\.current, result\.data!\]\)/);
+  assert.match(wizard, /setEquipment\(\(current\) => \[\.\.\.current, created\]\)/);
+});
+
+test("permissões incrementais preservam RLS de clientes e equipamentos", () => {
+  const migration = readFileSync("supabase/migrations/0018_runtime_client_equipment_permissions.sql", "utf8");
+  assert.match(migration, /grant select, insert, update, delete on public\.clients, public\.equipment to authenticated/i);
+  assert.doesNotMatch(migration, /drop policy|disable row level security/i);
 });

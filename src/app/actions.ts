@@ -181,9 +181,16 @@ export async function createClientQuickAction(formData: FormData): Promise<Workf
     p_email: String(formData.get("email") ?? "").trim() || null,
     p_city: String(formData.get("city") ?? "").trim() || null,
   });
-  if (error || !id) return { error: "Não foi possível cadastrar a academia." };
-  const { data: client } = await supabase.from("clients").select("id, name, responsible_name, phone, email, city").eq("id", id).maybeSingle();
-  return client ? { data: { ...client, responsible_name: client.responsible_name ?? null } } : { error: "Academia cadastrada, mas não foi possível carregá-la." };
+  if (error || !id) {
+    console.error("[visit] quick client RPC failed", { code: error?.code, message: error?.message });
+    return { error: "Não foi possível cadastrar a academia." };
+  }
+  const { data: client, error: selectError } = await supabase.from("clients").select("id, name, responsible_name, phone, email, city").eq("id", id).maybeSingle();
+  if (selectError) {
+    console.error("[visit] quick client reload failed", { code: selectError.code, message: selectError.message, clientId: id });
+    return { error: "A academia foi cadastrada, mas não foi possível atualizar a lista. Tente novamente." };
+  }
+  return client ? { data: { ...client, responsible_name: client.responsible_name ?? null } } : { error: "A academia foi cadastrada, mas não foi localizada na sua empresa." };
 }
 
 export async function createEquipmentQuickAction(formData: FormData): Promise<WorkflowActionResult<{ id: string; name: string; brand: string | null; model: string | null; location: string | null; status: string }>> {
@@ -200,9 +207,16 @@ export async function createEquipmentQuickAction(formData: FormData): Promise<Wo
     p_serial_number: String(formData.get("serialNumber") ?? "").trim() || null,
     p_location: String(formData.get("location") ?? "").trim() || null,
   });
-  if (error || !id) return { error: "Não foi possível cadastrar o equipamento." };
-  const { data: equipment } = await supabase.from("equipment").select("id, name, brand, model, location, status").eq("id", id).maybeSingle();
-  return equipment ? { data: equipment } : { error: "Equipamento cadastrado, mas não foi possível carregá-lo." };
+  if (error || !id) {
+    console.error("[visit] quick equipment RPC failed", { code: error?.code, message: error?.message, clientId });
+    return { error: "Não foi possível cadastrar o equipamento." };
+  }
+  const { data: equipment, error: selectError } = await supabase.from("equipment").select("id, name, brand, model, location, status").eq("id", id).maybeSingle();
+  if (selectError) {
+    console.error("[visit] quick equipment reload failed", { code: selectError.code, message: selectError.message, equipmentId: id, clientId });
+    return { error: "O equipamento foi cadastrado, mas não foi possível atualizar a lista. Tente novamente." };
+  }
+  return equipment ? { data: equipment } : { error: "O equipamento foi cadastrado, mas não foi localizado na sua empresa." };
 }
 
 export async function createServiceVisitAction(formData: FormData): Promise<WorkflowActionResult> {
