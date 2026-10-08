@@ -34,7 +34,7 @@ export type InventoryMovementType = "PURCHASE_IN" | "SERVICE_OUT" | "MANUAL_IN" 
 export type ObligationStatus = "PENDING" | "READY" | "PAID" | "OVERDUE" | "NOT_APPLICABLE";
 export type AccountingDocumentCategory = "FISCAL" | "COMPRA" | "RH" | "CONTABIL" | "CONTRATO" | "OUTRO";
 export type PlanCode = "BASIC" | "PRO";
-export type FeatureCode = "ACCOUNTING" | "FISCAL" | "INVOICES" | "FISCAL_ARCHIVE" | "INVENTORY_FISCAL" | "HR" | "EMPLOYEES" | "PAYROLL" | "ESOCIAL" | "FGTS" | "OBLIGATIONS" | "ACCOUNTING_DOCUMENTS" | "ACCOUNTANT_PORTAL";
+export type FeatureCode = "ACCOUNTING" | "FISCAL" | "INVOICES" | "FISCAL_ARCHIVE" | "INVENTORY_FISCAL" | "HR" | "EMPLOYEES" | "VACATIONS" | "PAYROLL" | "ESOCIAL" | "FGTS" | "DCTFWEB" | "OBLIGATIONS" | "ACCOUNTING_DOCUMENTS" | "ACCOUNTANT_PORTAL" | "ACCOUNTING_OFFICE";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
 export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; plan_code?: PlanCode; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; postal_code?: string | null; street?: string | null; address_number?: string | null; complement?: string | null; neighborhood?: string | null; }
