@@ -43,3 +43,13 @@ test("permissões incrementais preservam RLS de clientes e equipamentos", () => 
   assert.match(migration, /grant select, insert, update, delete on public\.clients, public\.equipment to authenticated/i);
   assert.doesNotMatch(migration, /drop policy|disable row level security/i);
 });
+
+test("autocomplete técnico busca dados server-side e permite modelo opcional", () => {
+  const route = readFileSync("src/app/api/visitas/technical-catalog/route.ts", "utf8");
+  const actions = readFileSync("src/app/actions.ts", "utf8");
+  assert.match(route, /equipment_models/);
+  assert.match(route, /manufacturers/);
+  assert.match(route, /limit = 20/);
+  assert.match(actions, /equipmentModelId/);
+  assert.match(actions, /equipment_model_id: technicalModel\.id/);
+});

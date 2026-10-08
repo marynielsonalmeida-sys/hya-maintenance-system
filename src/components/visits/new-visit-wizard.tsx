@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -1124,6 +1124,12 @@ function QuickEquipmentForm({
     event: React.FormEvent<HTMLFormElement>,
   ) => void;
 }) {
+  const [category, setCategory] = useState("");
+  const [brand, setBrand] = useState("");
+  const [manufacturerId, setManufacturerId] = useState("");
+  const [model, setModel] = useState("");
+  const [equipmentModelId, setEquipmentModelId] = useState("");
+
   return (
     <form
       onSubmit={onSubmit}
@@ -1143,23 +1149,31 @@ function QuickEquipmentForm({
           className="input"
         />
 
-        <input
-          name="category"
+        <TechnicalAutocomplete
+          kind="category"
+          value={category}
           placeholder="Categoria"
-          className="input"
+          onChange={(value) => { setCategory(value); setBrand(""); setManufacturerId(""); setModel(""); setEquipmentModelId(""); }}
+          onSelect={(item) => { setCategory(item.id); setBrand(""); setManufacturerId(""); setModel(""); setEquipmentModelId(""); }}
         />
-
-        <input
-          name="brand"
+        <TechnicalAutocomplete
+          kind="manufacturer"
+          value={brand}
+          category={category}
           placeholder="Marca"
-          className="input"
+          onChange={(value) => { setBrand(value); setManufacturerId(""); setModel(""); setEquipmentModelId(""); }}
+          onSelect={(item) => { setBrand(item.label); setManufacturerId(item.id); setModel(""); setEquipmentModelId(""); }}
         />
-
-        <input
-          name="model"
+        <TechnicalAutocomplete
+          kind="model"
+          value={model}
+          category={category}
+          manufacturerId={manufacturerId}
           placeholder="Modelo"
-          className="input"
+          onChange={(value) => { setModel(value); setEquipmentModelId(""); }}
+          onSelect={(item) => { setModel(item.label); setEquipmentModelId(item.id); }}
         />
+        <input type="hidden" name="equipmentModelId" value={equipmentModelId} />
 
         <input
           name="serialNumber"
@@ -1182,6 +1196,45 @@ function QuickEquipmentForm({
       </button>
     </form>
   );
+}
+
+type TechnicalSuggestion = { id: string; label: string; model_name?: string; model_code?: string | null };
+
+function TechnicalAutocomplete({ kind, value, category, manufacturerId, placeholder, onChange, onSelect }: { kind: "category" | "manufacturer" | "model"; value: string; category?: string; manufacturerId?: string; placeholder: string; onChange: (value: string) => void; onSelect: (item: TechnicalSuggestion) => void }) {
+  const [items, setItems] = useState<TechnicalSuggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const close = (event: MouseEvent) => { if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  useEffect(() => {
+    if (kind !== "category" && !category) { window.setTimeout(() => setItems([]), 0); return; }
+    if (kind === "model" && !manufacturerId) { window.setTimeout(() => setItems([]), 0); return; }
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      const params = new URLSearchParams({ kind, q: value });
+      if (category) params.set("category", category);
+      if (manufacturerId) params.set("manufacturerId", manufacturerId);
+      try { const response = await fetch(`/api/visitas/technical-catalog?${params.toString()}`, { cache: "no-store" }); const payload = await response.json() as { items?: Array<Record<string, string | null>> }; const next = (payload.items ?? []).map((item) => ({ id: String(item.id), label: String(item.label ?? item.model_name ?? ""), model_name: item.model_name ?? undefined, model_code: item.model_code })); setItems(next); setActiveIndex(0); setOpen(true); } finally { setLoading(false); }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [kind, value, category, manufacturerId]);
+
+  function keyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") { setOpen(false); return; }
+    if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); setActiveIndex((index) => Math.min(index + 1, Math.max(items.length - 1, 0))); }
+    if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => Math.max(index - 1, 0)); }
+    if (event.key === "Enter" && open && items[activeIndex]) { event.preventDefault(); onSelect(items[activeIndex]); setOpen(false); }
+  }
+
+  return <div ref={wrapperRef} className="relative"><input ref={inputRef} value={value} onChange={(event) => onChange(event.target.value)} onFocus={() => { if (items.length) setOpen(true); }} onKeyDown={keyDown} placeholder={placeholder} autoComplete="off" role="combobox" aria-expanded={open} aria-controls={`${kind}-suggestions`} className="input w-full" />{open && (items.length > 0 || loading || (kind === "model" && value.length > 0)) && <div id={`${kind}-suggestions`} role="listbox" className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-white/15 bg-[#0b171d] p-1 shadow-2xl">{loading ? <p className="px-3 py-2 text-xs text-slate-500">Buscando na biblioteca…</p> : items.length ? items.map((item, index) => <button type="button" role="option" aria-selected={index === activeIndex} key={item.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(item); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-sm ${index === activeIndex ? "bg-teal-300/15 text-teal-100" : "text-slate-300 hover:bg-white/5"}`}>{item.label}{item.model_code ? <span className="ml-2 text-xs text-slate-500">{item.model_code}</span> : null}</button>) : <div className="px-3 py-2 text-xs text-slate-500">{kind === "model" ? <><span>Modelo não encontrado.</span> <Link href="/biblioteca-tecnica/modelos/novo" className="ml-1 text-teal-300">+ Cadastrar novo modelo</Link></> : "Nenhuma opção encontrada."}</div>}</div>}</div>;
 }
 
 function PhotoInput({

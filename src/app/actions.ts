@@ -211,6 +211,24 @@ export async function createEquipmentQuickAction(formData: FormData): Promise<Wo
     console.error("[visit] quick equipment RPC failed", { code: error?.code, message: error?.message, clientId });
     return { error: "Não foi possível cadastrar o equipamento." };
   }
+  const equipmentModelId = String(formData.get("equipmentModelId") ?? "").trim();
+  if (equipmentModelId) {
+    const { data: technicalModel, error: modelError } = await supabase
+      .from("equipment_models")
+      .select("id, category, model_name")
+      .eq("id", equipmentModelId)
+      .eq("company_id", (await getCurrentMembership())?.company_id ?? "")
+      .maybeSingle();
+    if (modelError || !technicalModel) {
+      console.error("[visit] quick equipment technical model validation failed", { code: modelError?.code, message: modelError?.message, equipmentId: id, equipmentModelId });
+      return { error: "O equipamento foi cadastrado, mas o modelo técnico selecionado não é válido." };
+    }
+    const { error: linkError } = await supabase.from("equipment").update({ equipment_model_id: technicalModel.id }).eq("id", id).eq("client_id", clientId);
+    if (linkError) {
+      console.error("[visit] quick equipment technical link failed", { code: linkError.code, message: linkError.message, equipmentId: id, equipmentModelId });
+      return { error: "O equipamento foi cadastrado, mas não foi possível vinculá-lo ao modelo técnico." };
+    }
+  }
   const { data: equipment, error: selectError } = await supabase.from("equipment").select("id, name, brand, model, location, status").eq("id", id).maybeSingle();
   if (selectError) {
     console.error("[visit] quick equipment reload failed", { code: selectError.code, message: selectError.message, equipmentId: id, clientId });
