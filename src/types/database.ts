@@ -36,6 +36,7 @@ export type AccountingDocumentCategory = "FISCAL" | "COMPRA" | "RH" | "CONTABIL"
 export type PlanCode = "BASIC" | "PRO";
 export type FeatureCode = "ACCOUNTING" | "FISCAL" | "INVOICES" | "FISCAL_ARCHIVE" | "INVENTORY_FISCAL" | "HR" | "EMPLOYEES" | "VACATIONS" | "PAYROLL" | "ESOCIAL" | "FGTS" | "DCTFWEB" | "OBLIGATIONS" | "ACCOUNTING_DOCUMENTS" | "ACCOUNTANT_PORTAL" | "ACCOUNTING_OFFICE";
 
+export interface EquipmentCategoryCatalog { code: string; label: string; sort_order: number; active: boolean; }
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
 export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; plan_code?: PlanCode; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; postal_code?: string | null; street?: string | null; address_number?: string | null; complement?: string | null; neighborhood?: string | null; }
 export interface Profile extends Timestamps { id: UUID; full_name: string; phone: string | null; avatar_path: string | null; }
@@ -93,6 +94,7 @@ export interface Database {
       company_members: TableDefinition<CompanyMember>;
       clients: TableDefinition<Client>;
       equipment: TableDefinition<Equipment>;
+      equipment_category_catalog: TableDefinition<EquipmentCategoryCatalog>;
       service_requests: TableDefinition<ServiceRequest>;
       work_orders: TableDefinition<WorkOrder>;
       work_order_equipment: TableDefinition<WorkOrderEquipment>;

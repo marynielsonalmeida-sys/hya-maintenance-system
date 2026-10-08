@@ -4,8 +4,6 @@ import { getCurrentMembership } from "@/lib/auth/company";
 import type { EquipmentModelCategory } from "@/types/database";
 
 const limit = 20;
-const categoryLabels: Record<string, string> = { TREADMILL: "Esteira", CROSSOVER: "Cross over", BIKE: "Bicicleta", ELLIPTICAL: "Elíptico", LEG_PRESS: "Leg press", LEG_EXTENSION: "Cadeira extensora", LEG_CURL: "Mesa flexora", CHEST_PRESS: "Chest press", FREE_WEIGHT: "Peso livre", OTHER: "Outro" };
-
 export async function GET(request: Request) {
   const membership = await getCurrentMembership();
   if (!membership) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
@@ -17,9 +15,10 @@ export async function GET(request: Request) {
   const supabase = await createClient();
 
   if (kind === "category") {
-    const { data, error } = await supabase.from("equipment_models").select("category").eq("company_id", membership.company_id).limit(200);
+    const { data, error } = await supabase.from("equipment_category_catalog").select("code, label").eq("active", true).order("sort_order").limit(100);
     if (error) return NextResponse.json({ error: "CATALOG_UNAVAILABLE" }, { status: 500 });
-    const values = [...new Set((data ?? []).map((row) => String(row.category)).filter(Boolean))].map((value) => ({ id: value, label: categoryLabels[value] ?? value })).filter((item) => item.label.toLowerCase().includes(query.toLowerCase()) || item.id.toLowerCase().includes(query.toLowerCase())).slice(0, limit);
+    const normalizedQuery = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const values = (data ?? []).map((row) => ({ id: String(row.code), label: String(row.label) })).filter((item) => item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(normalizedQuery) || item.id.toLowerCase().includes(normalizedQuery)).slice(0, limit);
     return NextResponse.json({ items: values });
   }
 

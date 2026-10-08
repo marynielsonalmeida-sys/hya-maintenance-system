@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { requireCompany } from "@/lib/auth/company";
 import { createClient } from "@/lib/supabase/server";
 import { NewVisitWizard } from "@/components/visits/new-visit-wizard";
@@ -5,6 +6,7 @@ import { NewVisitWizard } from "@/components/visits/new-visit-wizard";
 export const instant = false;
 
 export default async function NewVisitPage() {
+  await connection();
   const membership = await requireCompany();
   const supabase = await createClient();
   const [{ data: clients }, { data: equipment }] = await Promise.all([

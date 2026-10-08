@@ -53,3 +53,14 @@ test("autocomplete técnico busca dados server-side e permite modelo opcional", 
   assert.match(actions, /equipmentModelId/);
   assert.match(actions, /equipment_model_id: technicalModel\.id/);
 });
+
+test("catálogo base fornece categorias amigáveis e a rota Nova Visita é dinâmica", () => {
+  const migration = readFileSync("supabase/migrations/0019_equipment_category_catalog.sql", "utf8");
+  const page = readFileSync("src/app/(protected)/visitas/nova/page.tsx", "utf8");
+  const route = readFileSync("src/app/api/visitas/technical-catalog/route.ts", "utf8");
+  assert.match(migration, /equipment_category_catalog/);
+  assert.match(migration, /BICICLETA_VERTICAL/);
+  assert.match(migration, /Elíptico/);
+  assert.match(page, /await connection\(\)/);
+  assert.match(route, /equipment_category_catalog/);
+});
