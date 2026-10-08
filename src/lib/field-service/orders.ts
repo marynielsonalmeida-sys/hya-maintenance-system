@@ -5,10 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 
 type LooseRow = Record<string, unknown>;
 type ListRow = { id: string; client_id: string; assigned_technician_id: string | null; status: string; created_at: string; clients: { name: string } | null; profiles: { full_name: string } | null };
-type DetailOrder = { id: string; client_id: string; assigned_technician_id: string | null; quote_id: string | null; status: string; started_at: string | null; finished_at: string | null; clients: { name: string } | null; profiles: { full_name: string } | null };
-type EquipmentRow = { equipment_id: string; equipment: { id: string; name: string; brand: string | null; model: string | null } | null; diagnosis: string | null; problem_description: string | null; service_performed: string | null; technical_notes: string | null };
-type ExecutionRow = { id: string; description: string; quantity: number; unit: string; action: string };
-type PhotoRow = { id: string; type: string; storage_path: string };
+type DetailOrder = { id: string; company_id: string; client_id: string; assigned_technician_id: string | null; quote_id: string | null; status: string; started_at: string | null; finished_at: string | null; clients: { name: string; responsible_name?: string | null; phone?: string | null; email?: string | null } | null; profiles: { full_name: string } | null };
+type EquipmentRow = { equipment_id: string; equipment: { id: string; name: string; brand: string | null; model: string | null; serial_number?: string | null } | null; diagnosis: string | null; problem_description: string | null; service_performed: string | null; technical_notes: string | null };
+type ExecutionRow = { id: string; equipment_id: string | null; description: string; quantity: number; unit: string; action: string };
+type PhotoRow = { id: string; equipment_id: string | null; type: string; storage_path: string };
 type QuoteRow = { id: string; quote_number: string; total: number; status: string };
 
 export async function getWorkOrders(status?: string): Promise<ListRow[]> {
@@ -70,7 +70,7 @@ export async function getWorkOrder(id: string): Promise<{ workOrder: DetailOrder
   const { data: equipmentRows } = equipmentIds.length ? await db.from("equipment").select("id, name, brand, model").in("id", equipmentIds).eq("company_id", membership.company_id) : { data: [] };
   const equipmentById = new Map((equipmentRows ?? []).map((equipment: LooseRow) => [equipment.id, equipment]));
   return {
-    workOrder: { id: workOrder.id, client_id: workOrder.client_id, assigned_technician_id: workOrder.assigned_technician_id, quote_id: workOrder.quote_id ?? null, status: workOrder.status, started_at: workOrder.started_at ?? null, finished_at: workOrder.finished_at ?? null, clients: clientResult.data ?? null, profiles: profileResult.data ?? null },
+    workOrder: { id: workOrder.id, company_id: workOrder.company_id, client_id: workOrder.client_id, assigned_technician_id: workOrder.assigned_technician_id, quote_id: workOrder.quote_id ?? null, status: workOrder.status, started_at: workOrder.started_at ?? null, finished_at: workOrder.finished_at ?? null, clients: clientResult.data ?? null, profiles: profileResult.data ?? null },
     equipment: (equipmentResult.data ?? []).map((item: LooseRow) => ({ equipment_id: item.equipment_id as string, equipment: equipmentById.get(item.equipment_id as string) ?? null, diagnosis: item.diagnosis as string | null, problem_description: item.problem_description as string | null, service_performed: item.service_performed as string | null, technical_notes: item.technical_notes as string | null })) as EquipmentRow[],
     executionItems: (itemsResult.data ?? []) as ExecutionRow[],
     photos: (photosResult.data ?? []) as PhotoRow[],

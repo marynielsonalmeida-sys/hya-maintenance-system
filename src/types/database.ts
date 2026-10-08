@@ -30,7 +30,7 @@ export type TechnicalConfidenceStatus = "OFFICIAL_MANUFACTURER" | "FIELD_VERIFIE
 export type TechnicalSourceType = "MANUFACTURER_DOCUMENT" | "FIELD_INSPECTION" | "MANUAL" | "PARTS_CATALOG" | "SCHEMATIC" | "SERVICE_BULLETIN" | "WEB_SOURCE" | "OTHER";
 
 export interface Timestamps { created_at: ISODate; updated_at: ISODate; }
-export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; }
+export interface Company extends Timestamps { id: UUID; name: string; document: string | null; phone: string | null; email: string | null; status: CompanyStatus; commercial_name?: string | null; legal_name?: string | null; logo_path?: string | null; whatsapp?: string | null; address?: string | null; city?: string | null; state?: string | null; website?: string | null; postal_code?: string | null; street?: string | null; address_number?: string | null; complement?: string | null; neighborhood?: string | null; }
 export interface Profile extends Timestamps { id: UUID; full_name: string; phone: string | null; avatar_path: string | null; }
 export interface UserRole { code: AppRole; name: string; description: string; }
 export interface CompanyMember extends Timestamps { id: UUID; company_id: UUID; profile_id: UUID; role_code: AppRole; status: MemberStatus; }

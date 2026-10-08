@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentMembership, requireCompany } from "@/lib/auth/company";
+import { getCurrentMembership, getCurrentUser, requireCompany } from "@/lib/auth/company";
 import { getAuthErrorMessage, normalizeCompanyPhone, normalizeCompanyTaxId, validateCompanyEmail, validateCompanyName, validateCompanyPhone, validateCompanyTaxId, validateRegistration } from "@/lib/auth/validation";
 import { revalidatePath } from "next/cache";
 import { getCompatibleTechnicalParts } from "@/lib/technical-library/queries";
@@ -72,6 +72,98 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function updateCompanySettingsAction(formData: FormData): Promise<void> {
+  const membership = await requireCompany();
+  const name = String(formData.get("commercialName") ?? "").trim();
+  const document = normalizeCompanyTaxId(String(formData.get("document") ?? ""));
+  const phone = normalizeCompanyPhone(String(formData.get("phone") ?? ""));
+  const whatsapp = normalizeCompanyPhone(String(formData.get("whatsapp") ?? ""));
+  const email = String(formData.get("email") ?? "").trim();
+  const nameError = validateCompanyName(name);
+  const documentError = validateCompanyTaxId(document);
+  const phoneError = validateCompanyPhone(phone);
+  const whatsappError = validateCompanyPhone(whatsapp);
+  const emailError = validateCompanyEmail(email);
+  if (nameError || documentError || phoneError || whatsappError || emailError) redirect("/configuracoes?error=validation");
+  const supabase = await createClient();
+  const { error } = await supabase.from("companies").update({
+    name,
+    commercial_name: name,
+    legal_name: String(formData.get("legalName") ?? "").trim() || null,
+    document,
+    phone,
+    whatsapp,
+    email,
+    postal_code: String(formData.get("postalCode") ?? "").replace(/\D/g, "").slice(0, 8) || null,
+    street: String(formData.get("street") ?? "").trim() || null,
+    address_number: String(formData.get("addressNumber") ?? "").trim() || null,
+    complement: String(formData.get("complement") ?? "").trim() || null,
+    neighborhood: String(formData.get("neighborhood") ?? "").trim() || null,
+    city: String(formData.get("city") ?? "").trim() || null,
+    state: String(formData.get("state") ?? "").trim().toUpperCase().slice(0, 2) || null,
+    website: String(formData.get("website") ?? "").trim() || null,
+  }).eq("id", membership.company_id);
+  if (error) {
+    console.error("[company-settings] update failed", { code: error.code, message: error.message, companyId: membership.company_id });
+    redirect("/configuracoes?error=save");
+  }
+  revalidatePath("/configuracoes");
+  revalidatePath("/dashboard");
+  redirect("/configuracoes?saved=1");
+}
+
+export async function uploadCompanyLogoAction(formData: FormData): Promise<void> {
+  const membership = await requireCompany();
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0 || !["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) redirect("/configuracoes?error=logo");
+  const supabase = await createClient();
+  const extension = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
+  const logoPath = `${membership.company_id}/logo.${extension}`;
+  const upload = await supabase.storage.from("company-assets").upload(logoPath, file, { contentType: file.type, upsert: true });
+  if (upload.error) {
+    console.error("[company-settings] logo upload failed", { code: upload.error.name, message: upload.error.message, companyId: membership.company_id });
+    redirect("/configuracoes?error=logo");
+  }
+  const { error } = await supabase.from("companies").update({ logo_path: logoPath }).eq("id", membership.company_id);
+  if (error) {
+    console.error("[company-settings] logo path update failed", { code: error.code, message: error.message, companyId: membership.company_id });
+    redirect("/configuracoes?error=logo");
+  }
+  revalidatePath("/configuracoes");
+  revalidatePath("/dashboard");
+  redirect("/configuracoes?logo=updated");
+}
+
+export async function removeCompanyLogoAction(): Promise<void> {
+  const membership = await requireCompany();
+  const supabase = await createClient();
+  const { data: company } = await supabase.from("companies").select("logo_path").eq("id", membership.company_id).maybeSingle();
+  if (company?.logo_path) await supabase.storage.from("company-assets").remove([company.logo_path]);
+  const { error } = await supabase.from("companies").update({ logo_path: null }).eq("id", membership.company_id);
+  if (error) {
+    console.error("[company-settings] logo removal failed", { code: error.code, message: error.message, companyId: membership.company_id });
+    redirect("/configuracoes?error=logo");
+  }
+  revalidatePath("/configuracoes");
+  redirect("/configuracoes?logo=removed");
+}
+
+export async function updateProfileAction(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  if (fullName.length < 2) redirect("/configuracoes?error=profile");
+  const supabase = await createClient();
+  const { error } = await supabase.from("profiles").update({ full_name: fullName, phone: normalizeCompanyPhone(String(formData.get("phone") ?? "")) || null }).eq("id", user.id);
+  if (error) {
+    console.error("[profile] update failed", { code: error.code, message: error.message, userId: user.id });
+    redirect("/configuracoes?error=profile");
+  }
+  revalidatePath("/configuracoes");
+  revalidatePath("/dashboard");
+  redirect("/configuracoes?saved=profile");
 }
 
 export type WorkflowActionResult<T = unknown> = { data?: T; error?: string; visitId?: string };
